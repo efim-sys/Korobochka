@@ -11,7 +11,7 @@ Libraries required:
   7. ESPAsyncWebServer
   8. Set of pre-installed esp32 libraries
 
-Korobochka features 11 pre-installed apps:
+Korobochka features 12 pre-installed apps:
   1. Space-Heroes
   2. Cat or Bread 2
   3. Tanchiki
