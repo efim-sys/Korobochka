@@ -1,12 +1,15 @@
 # Korobochka
 Gaming console OS for esp32
 
-Libraries need:
+Libraries required:
   1. Adafruit GFX
   2. Adafruit SSD1306
   3. Adafruit MLX90614
   4. AsyncElegantOTA
-  5. Set of pre-installed esp32 libraries
+  5. WebSerial
+  6. AsyncTCP
+  7. ESPAsyncWebServer
+  8. Set of pre-installed esp32 libraries
 
 Korobochka features 11 pre-installed apps:
   1. Space-Heroes
@@ -19,7 +22,8 @@ Korobochka features 11 pre-installed apps:
   8. Polish cow.mp4
   9. Test app
   10. Beer's
-  11. Settings:
+  11. Web CLI
+  12. Settings:
       1. Piano settings
       2. Cat or Bread delay
       3. Medic thermometer
