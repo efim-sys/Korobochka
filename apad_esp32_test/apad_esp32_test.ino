@@ -3,7 +3,7 @@
 #include <Adafruit_MLX90614.h>
 #include <Fonts/FreeMonoOblique12pt7b.h>
 #include <EEPROM.h>
-#include <ESP32_tone.h>
+#include <WebSerial.h>
 
 #include <WiFi.h>
 #include <AsyncTCP.h>
@@ -15,7 +15,10 @@ AsyncWebServer server(80);
 const char* ssid = "spynet-2.4g";
 const char* password = "MW9pDbkK";
 
-#define APPS 11  // Для 11 приложений на Korobochka
+const char* APssid = "KorobochkaWiFi";
+const char* APpassword = "12345678";
+
+#define APPS 12  // Для 12 приложений на Korobochka
 
 #define KEYRS 16
 #define KEYRC 4
@@ -29,10 +32,10 @@ const char* password = "MW9pDbkK";
 
 #define OLED_RESET 7
 
+#define VERSION "1.33"
+
 Adafruit_SSD1306 display(128, 64, &Wire, OLED_RESET);
 Adafruit_MLX90614 mlx = Adafruit_MLX90614();
-
-
 
 
 const unsigned char mycow1 [] PROGMEM = {
@@ -957,6 +960,21 @@ const unsigned char beer_logo [] PROGMEM = {
   0x0e, 0x00, 0x00, 0x1c, 0x00, 0x03, 0xff, 0xff, 0xf0, 0x00
 };
 
+const unsigned char terminal_logo [] PROGMEM = {
+  // 'cutecom, 34x34px
+  0x03, 0xff, 0xff, 0xf0, 0x00, 0x0e, 0x00, 0x00, 0x1c, 0x00, 0x18, 0x00, 0x00, 0x06, 0x00, 0x30, 
+  0x00, 0x00, 0x03, 0x00, 0x60, 0x00, 0x00, 0x01, 0x80, 0x40, 0x00, 0x00, 0x00, 0x80, 0xc0, 0x00, 
+  0x00, 0x00, 0xc0, 0x80, 0x00, 0x00, 0x00, 0x40, 0x80, 0x00, 0x00, 0x00, 0x40, 0x80, 0x00, 0x00, 
+  0x00, 0x40, 0x80, 0x00, 0x00, 0x00, 0x40, 0x8c, 0x00, 0x00, 0x00, 0x40, 0x9f, 0x00, 0x00, 0x00, 
+  0x40, 0x8f, 0xc0, 0x00, 0x00, 0x40, 0x83, 0xf0, 0x00, 0x00, 0x40, 0x81, 0xf8, 0x00, 0x00, 0x40, 
+  0x80, 0x7c, 0x07, 0xf0, 0x40, 0x80, 0x7e, 0x07, 0xf8, 0x40, 0x80, 0xfc, 0x03, 0xf0, 0x40, 0x83, 
+  0xf0, 0x00, 0x00, 0x40, 0x8f, 0xc0, 0x00, 0x00, 0x40, 0x9f, 0x00, 0x00, 0x00, 0x40, 0x9e, 0x00, 
+  0x00, 0x00, 0x40, 0x88, 0x00, 0x00, 0x00, 0x40, 0x80, 0x00, 0x00, 0x00, 0x40, 0x80, 0x00, 0x00, 
+  0x00, 0x40, 0x80, 0x00, 0x00, 0x00, 0x40, 0xc0, 0x00, 0x00, 0x00, 0xc0, 0x40, 0x00, 0x00, 0x00, 
+  0x80, 0x60, 0x00, 0x00, 0x01, 0x80, 0x30, 0x00, 0x00, 0x03, 0x00, 0x18, 0x00, 0x00, 0x06, 0x00, 
+  0x0e, 0x00, 0x00, 0x1c, 0x00, 0x03, 0xff, 0xff, 0xf0, 0x00
+};
+
 const unsigned char *cow[8] PROGMEM = {mycow1, mycow2, mycow3, mycow4, mycow5, mycow6, mycow7, mycow8};
 
 const char *settings[] = {"music", "cat or bread delay", "Medic_thermometer", "ROM-tool (password)"};
@@ -1033,12 +1051,13 @@ int hardFall;
 long int kIncreaseTimer = 0;
 long int hardFallTimer = 0;
 int count = 0;
+
 long int timer = 0;
 int dead = 2;
 
 void wait() {
-  delay(3000);
-  resetFunc();
+  delay(1000000*EEPROM.read(65)+5000);
+  ESP.restart();
 }
 /*
   void setup1() {
@@ -1139,6 +1158,9 @@ void gamMenu() {
       case 10:
         display.drawBitmap(47, 23, beer_logo, 34, 34, 1);
         break;
+      case 11:
+        display.drawBitmap(47, 23, terminal_logo, 34, 34, 1);
+        break;
 
     }
     display.drawRect(0, 0, 128, 64 , 1);
@@ -1197,7 +1219,7 @@ void gamMenu() {
       playPhisics();
     }
     else if (mapnum == 5) {
-      playZmeyka();
+      playWebSerial();
     }
     else if (mapnum == 6) {
       display.clearDisplay();
@@ -1228,10 +1250,15 @@ void gamMenu() {
     else if (mapnum == 10) {
       playBeer();
     }
+    else if (mapnum == 11) {
+      playWebSerial();
+    }
   }
 
 
 }
+
+IPAddress IP;
 
 void setup() {
   EEPROM.begin(256);
@@ -1240,7 +1267,7 @@ void setup() {
   pinMode(KEYRC, INPUT_PULLUP);
   pinMode(KEYRS, INPUT_PULLUP);
   pinMode(KEYOTA, INPUT_PULLUP);
-  pinMode(TONEPIN, OUTPUT);
+  ledcSetup(TONEPIN, 300, 255);
   randomSeed(analogRead(36));
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.dim(0);
@@ -1254,13 +1281,23 @@ void setup() {
     display.setCursor(5, 5);
     display.print("  Firmware upload!");
     display.setCursor(5, 45);
-    display.println("Connecting to ");
-    display.print(ssid);
-    display.display();
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(100);
+    if (EEPROM.read(64) == 0) {
+      display.println("Connecting to ");
+      display.print(ssid);
+      display.display();
+      WiFi.mode(WIFI_STA);
+      WiFi.begin(ssid, password);
+      while (WiFi.status() != WL_CONNECTED) {
+        delay(100);
+      }
+      IP = WiFi.localIP();
+    }
+    else {
+      display.println("Connect to ");
+      display.print(APssid);
+      display.display();
+      WiFi.softAP(APssid, APpassword);
+      IP = WiFi.softAPIP();
     }
     server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
       request->send(200, "text/plain", "Hi! I am ESP32.");
@@ -1272,7 +1309,7 @@ void setup() {
     display.print("  Firmware upload!");
     display.setCursor(5, 45);
     display.print("IP: ");
-    display.print(WiFi.localIP());
+    display.print(IP);
     display.display();
     while (1) AsyncElegantOTA.loop();
   }

@@ -90,7 +90,7 @@ void playPhisics() {
          }
       }
       display.display();
-      wait();
+      while(1);
       break;
   }
 

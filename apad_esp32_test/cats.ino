@@ -170,7 +170,7 @@ void winCats() {
   }
   display.drawRect(0, 0, 128, 64, 1);
   display.display();
-  delay(5000);
+  
   wait();
 }
 

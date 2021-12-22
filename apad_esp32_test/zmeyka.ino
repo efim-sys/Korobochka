@@ -1,3 +1,5 @@
+
+/*
 byte lenght = 3;
 byte zmeyka[][2] = {{2, 2}, {3, 2}, {4, 2}};
 byte rotation = 0;
@@ -24,7 +26,7 @@ void playZmeyka(){
       }
       delay(200);
     }
-    if(milllis()%1000<10){
+    if(millis()%1000<10){
       switch(rotation){
         case 0:
           for(byte i=0; i<lenght; i++){
@@ -42,8 +44,12 @@ void playZmeyka(){
 }
 
 
+
+
 void drawZmeyka(){
   for(byte i = 0; i < lenght; i++){
     display.fillRect(zmeyka[i][0]*8, zmeyka[i][1]*8, 8, 8, 1);
   }
 }
+
+*/

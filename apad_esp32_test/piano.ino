@@ -16,20 +16,20 @@ void playPiano() {
       display.drawRoundRect((10 + 20)*i + 10, 25, 20, 30, 4, 1);
     }
     if (!digitalRead(KEYLS)) {
-      tone(TONEPIN, noteos[0]);
+      ledcWriteTone(TONEPIN, noteos[0]);
       display.fillRoundRect((10 + 20) * 0 + 10, 25, 20, 30, 4, 1);
 
     }
     else if (!digitalRead(KEYLC)) {
-      tone(TONEPIN, noteos[1]);
+      ledcWriteTone(TONEPIN, noteos[1]);
       display.fillRoundRect((10 + 20) * 1 + 10, 25, 20, 30, 4, 1);
     }
     else if (!digitalRead(KEYRC)) {
-      tone(TONEPIN, noteos[2]);
+      ledcWriteTone(TONEPIN, noteos[2]);
       display.fillRoundRect((10 + 20) * 2 + 10, 25, 20, 30, 4, 1);
     }
     else if (!digitalRead(KEYRS)) {
-      tone(TONEPIN, noteos[3]);
+      ledcWriteTone(TONEPIN, noteos[3]);
       display.fillRoundRect((10 + 20) * 3 + 10, 25, 20, 30, 4, 1);
     }
     else {
