@@ -1,6 +1,6 @@
 #include<Adafruit_GFX.h>
 #include<Adafruit_SSD1306.h>
-//#include <Adafruit_MLX90614.h>
+#include <Adafruit_MLX90614.h>
 //#include <Fonts/FreeMonoOblique12pt7b.h>
 #include <EEPROM.h>
 #include<Vector.h>
@@ -1296,7 +1296,7 @@ void setup() {
   ledcWrite(0, 125);
   EEPROM.begin(256);
   Wire.setClock(800000);
-  Wire.begin(18, 19);
+  Wire.begin(9, 10);
   pinMode(KEYLS, INPUT_PULLUP);
   pinMode(KEYLC, INPUT_PULLUP);
   pinMode(KEYRC, INPUT_PULLUP);
@@ -1455,7 +1455,7 @@ void playSettings() {
         }
       case 2: {
           thermo_type = 0;
-          //playThermometer();
+          playThermometer();
           break;
         }
       case 3: {

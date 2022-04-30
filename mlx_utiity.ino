@@ -1,4 +1,4 @@
-/*1
+Adafruit_MLX90614 mlx = Adafruit_MLX90614();
 #define BUFFER_SIZE 128
 
 byte thermoBuffer[BUFFER_SIZE];
@@ -6,7 +6,7 @@ byte thermoBuffer[BUFFER_SIZE];
 float shotTermo = 0;
 
 void playThermometer() {
-  mlx.begin(0x5A, &Wire1);
+  mlx.begin(0x5A);
   mlx.writeEmissivity(0.98);
   for (byte n = BUFFER_SIZE; n > 0; n--) {
     thermoBuffer[n] =20;
@@ -71,4 +71,3 @@ void graphThermometer() {
   display.display();
   delay(350);
 }
-*/
