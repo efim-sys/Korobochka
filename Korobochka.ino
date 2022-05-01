@@ -5,12 +5,14 @@
 #include <EEPROM.h>
 #include<Vector.h>
 #include <WiFi.h>
+#include <WiFiClient.h>
+#include <WebServer.h>
 //#include <ESPmDNS.h>
 //#include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <HTTPClient.h>
 
-
+//#include <Arduino_JSON.h>
 
 const char* ssid = "spynet-2.4g";
 const char* password = "MW9pDbkK";
@@ -1015,7 +1017,7 @@ const unsigned char WiFi_logo [] PROGMEM = {
 
 const unsigned char *cow[8] PROGMEM = {mycow1, mycow2, mycow3, mycow4, mycow5, mycow6, mycow7, mycow8};
 
-const char *settings[] = {"music", "cat or bread delay", "Medic_thermometer", "ROM-tool (password)", "About device"};
+const char *settings[] = {"music", "cat or bread delay", "Medic_thermometer", "ROM-tool (password)", "About device", "Scan WiFi"};
 const char *keys[] = {"KEY1", "KEY2", "KEY3", "KEY4"};
 const char *note_names[] = {"ДО", "РЕ", "МИ", "ФА", "СОЛЬ", "ЛЯ", "СИ", "ДО2"};
 const int notes[] = {261, 293, 329, 349, 392, 440, 493, 526};
@@ -1149,8 +1151,14 @@ String utf8rus(String source)
 
 bool thermo_type = 1;
 
+WebServer gameServer(80);
+
 class Pong {
   public:
+    String gameName = "KorobochkaPong";
+
+    String gamePass = "pongpong";
+
     int leftRacket = 0;
     int rightRacket = 0;
     int racketSize = 20;
@@ -1161,6 +1169,8 @@ class Pong {
     int mspt = 100;
 
     int timer = millis();
+
+    bool ai = false;
 
     struct {
       float x = 64.0;
@@ -1178,6 +1188,8 @@ class Pong {
       display.print(countLeft);
       display.setCursor(67, 28);
       display.print(countRight);
+      display.setCursor(0, 0);
+      display.print(requestMeter);
       display.drawFastVLine(64, 0, 64, 1);
       for(byte i = 0; i < 64; i += 8) {
         display.drawFastVLine(64, i, 4, 0);
@@ -1185,11 +1197,14 @@ class Pong {
       display.display();
     }
 
-    void buttons() {
-      if(!digitalRead(KEYRS)) rightRacket--;
-      if(!digitalRead(KEYRC)) rightRacket++;
+    void leftButtons() {
       if(!digitalRead(KEYLS)) leftRacket--;
       if(!digitalRead(KEYLC)) leftRacket++;
+    }
+
+    void rightButtons() {
+      if(!digitalRead(KEYRS)) rightRacket--;
+      if(!digitalRead(KEYRC)) rightRacket++;
     }
 
     void bounds() {
@@ -1233,7 +1248,7 @@ class Pong {
         }
         else {
           countLeft++;
-          if(countLeft > 9) win(0);
+          //if(countLeft > 9) win(0);
           ballToCenter();
         }
 
@@ -1246,10 +1261,15 @@ class Pong {
         }
         else {
           countRight++;
-          if(countRight > 9) win(1);
+          //if(countRight > 9) win(1);
           ballToCenter();
         }
       }
+    }
+
+    void think() {
+      if(ball.y > leftRacket + racketSize / 2) leftRacket ++;
+      else leftRacket --;
     }
 
     void play(){
@@ -1257,7 +1277,9 @@ class Pong {
       drawScene();
       while(1) {
         if(millis() - timer > mspt) {
-          buttons();
+          rightButtons();
+          if(ai) think();
+          if(!ai) leftButtons();
           bounds();
           moveBall();
           checkHit();
@@ -1265,7 +1287,124 @@ class Pong {
         }
       }
     }
+
+
+
+    void playServer() {
+      String apName = gameName + " " + String(WiFi.macAddress()).substring(0, 2);
+      Serial.println("Started wifi ap");
+      WiFi.enableAP(true);
+      delay(100);
+      WiFi.softAP(apName.c_str(), gamePass.c_str());
+      delay(500);
+      Serial.println(String(WiFi.softAPIP()));
+      display.setTextSize(1);
+
+      drawScene();
+
+      display.setCursor(0, 0);
+      display.print(WiFi.softAPIP());
+      display.display();
+
+      gameServer.on("/rules", sendRules);
+      gameServer.on("/game", playGame);
+
+      gameServer.begin();
+
+      int tmr = millis();
+
+      bool flag = true;
+      while(1) {
+        gameServer.handleClient();
+        if(millis() - timer > mspt) {
+          rightButtons();
+          bounds();
+          moveBall();
+          checkHit();
+          drawScene();
+        }
+        if(millis() - tmr > 500) {
+          display.drawPixel(0, 0, flag);
+          display.display();
+          flag = !flag;
+          tmr = millis();
+        }
+      }
+    }
+    int requestMeter = 0;
+    void getData() {
+      requestMeter = millis();
+      HTTPClient http;
+      http.begin("http://192.168.4.1/game?pos="+String(rightRacket));
+      http.GET();
+      String raw = http.getString();
+      requestMeter = millis()-requestMeter;
+      int game[5];
+      for(int i = 0; i < 5; i++) {
+        int ind = raw.indexOf(";");
+        game[i] = raw.substring(0, ind).toInt();
+        raw.remove(0, ind+1);
+      }
+      leftRacket = game[0];
+      countRight = game[1];
+      countLeft = game[2];
+      ball.x = 128-game[3];
+      ball.y = game[4];
+
+    }
+
+    void playClient() {
+      int n = WiFi.scanNetworks();
+      int room;
+      for (int i = 0; i < n; ++i) {
+        if(String(WiFi.SSID(i)).substring(0, gameName.length()) == gameName) {
+          room = i;
+          break;
+        }
+      }
+      String roomName = WiFi.SSID(room);
+      WiFi.mode(WIFI_STA);
+      WiFi.begin(roomName.c_str(), gamePass.c_str());
+      message("connecting", 500);
+      while (WiFi.status() != WL_CONNECTED) {
+        Serial.print('.');
+        delay(200);
+      }
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.setTextSize(1);
+      display.println(WiFi.localIP());
+      HTTPClient http;
+      http.begin("http://192.168.4.1/rules");
+      http.GET();
+      String rawRules = http.getString();
+      display.println(rawRules);
+      int ri = rawRules.indexOf(";");
+      mspt = rawRules.substring(0, ri).toInt();
+      racketSize = rawRules.substring(ri + 1).toInt();
+      display.println(mspt);
+      display.println(racketSize);
+      display.display();
+      while(1){
+        if(millis() - timer > mspt) {
+          rightButtons();
+          getData();
+          drawScene();
+        }
+      };
+    }
 } pong;
+
+void sendRules() {
+  String json = String(pong.mspt)+";"+String(pong.racketSize);
+  gameServer.send(200, "text/plain", json);
+}
+
+void playGame() {
+  pong.leftRacket = String(gameServer.arg("pos")).toInt();
+  String json = String(int(pong.rightRacket))+";"+String(int(pong.countLeft))+";"+String(int(pong.countRight))+";"+String(int(pong.ball.x))+";"+String(int(pong.ball.y));
+  gameServer.send(200, "text/plain", json);
+}
 
 void gamMenu() {
   int btn0 = !BTN;
@@ -1313,8 +1452,8 @@ void gamMenu() {
         display.drawBitmap(47, 23, terminal_logo, 34, 34, 1);
         break;
       case 10:
-        display.setCursor(2, 30);
-        display.print(utf8rus("  Pong"));
+        display.setCursor(40, 30);
+        display.print("Pong");
         break;
 
     }
@@ -1407,7 +1546,24 @@ void gamMenu() {
       //playFilm();
     }
     else if (mapnum == 10) {
-      pong.play();
+      const char *menuMan[] = {"Вдвоем", "С копьютером", "Создать комнату", "Войти в комнату"};
+      switch(korobkaMenu(4, menuMan)) {
+        case 0:
+          pong.play();
+          break;
+        case 1:
+          pong.ai = true;
+          pong.play();
+          break;
+        case 2:
+          pong.playServer();
+          break;
+        case 3:
+          pong.playClient();
+          break;
+
+      }
+
       //playFilm();
     }
   }
@@ -1426,6 +1582,8 @@ void setup() {
   EEPROM.begin(256);
   Wire.setClock(800000);
   Wire.begin(9, 10);
+  Serial.begin(115200);
+  Serial.println("Starting Korobochka");
   pinMode(KEYLS, INPUT_PULLUP);
   pinMode(KEYLC, INPUT_PULLUP);
   pinMode(KEYRC, INPUT_PULLUP);
@@ -1501,6 +1659,8 @@ void loop() {
 
 }
 
+
+
 byte korobkaMenu(byte lenght, const char *elements[]) {
   int mapnum = 0;
   while (1) {
@@ -1568,7 +1728,7 @@ int readInt(int addr) {
 
 void playSettings() {
   while (1) {
-    switch (korobkaMenu(5, settings)) {
+    switch (korobkaMenu(6, settings)) {
       case 0: {
           byte key = korobkaMenu(4, keys);
           int freq = notes[korobkaMenu(8, note_names)];
@@ -1609,6 +1769,19 @@ void playSettings() {
         display.setTextSize(1);
         WiFi.mode(WIFI_MODE_STA);
         display.println(WiFi.macAddress());
+        display.display();
+        while(1);
+        break;
+
+      }
+      case 5: {
+        int n = WiFi.scanNetworks();
+        display.clearDisplay();
+        display.setCursor(0, 0);
+        display.setTextSize(1);
+        for (int i = 0; i < n; ++i) {
+          display.println(WiFi.SSID(i));
+        }
         display.display();
         while(1);
         break;
