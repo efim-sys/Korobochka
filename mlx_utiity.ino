@@ -26,7 +26,45 @@ void playThermometer() {
   }
   }
 }
+/*
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
+void playDSThermometer() {
+  OneWire oneWire(8);
+
+  DallasTemperature sensor(&oneWire);
+  sensor.begin();
+  sensor.requestTemperatures();
+  float temperatureC = sensor.getTempCByIndex(0);
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(15, 5);
+  display.print(F("DS therometer 1.0"));
+  while (1) {
+    if (millis() % 100 <= 3) {
+      sensor.requestTemperatures();
+      float temperatureC = sensor.getTempCByIndex(0);
+      display.setTextSize(3);
+      display.fillRect(0, 18, 128, 46, 0);
+      display.setCursor(0, 18);
+      display.print(temperatureC);
+      display.print(F("C"));
+      display.setTextSize(2);
+      display.setCursor(25, 45);
+      display.print(shotTermo);
+      display.print(F(" C"));
+      display.display();
+    }
+    else if (!digitalRead(KEYRS)) {
+      sensor.requestTemperatures();
+      float temperatureC = sensor.getTempCByIndex(0);
+      shotTermo = temperatureC;
+    }
+  }
+  }
+
+*/
 void normalThermometer() {
   if (millis() % 100 <= 3) {
     display.setTextSize(3);

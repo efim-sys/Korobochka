@@ -11,7 +11,7 @@
 //#include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <HTTPClient.h>
-
+#include <Fonts/Picopixel.h>
 //#include <Arduino_JSON.h>
 
 const char* ssid = "spynet-2.4g";
@@ -1017,7 +1017,7 @@ const unsigned char WiFi_logo [] PROGMEM = {
 
 const unsigned char *cow[8] PROGMEM = {mycow1, mycow2, mycow3, mycow4, mycow5, mycow6, mycow7, mycow8};
 
-const char *settings[] = {"music", "cat or bread delay", "Medic_thermometer", "ROM-tool (password)", "About device", "Scan WiFi"};
+const char *settings[] = {"music", "cat or bread delay", "About device", "Tools"};
 const char *keys[] = {"KEY1", "KEY2", "KEY3", "KEY4"};
 const char *note_names[] = {"ДО", "РЕ", "МИ", "ФА", "СОЛЬ", "ЛЯ", "СИ", "ДО2"};
 const int notes[] = {261, 293, 329, 349, 392, 440, 493, 526};
@@ -1168,6 +1168,8 @@ class Pong {
 
     int mspt = 100;
 
+    int speed = 1;
+
     int timer = millis();
 
     bool ai = false;
@@ -1198,13 +1200,13 @@ class Pong {
     }
 
     void leftButtons() {
-      if(!digitalRead(KEYLS)) leftRacket--;
-      if(!digitalRead(KEYLC)) leftRacket++;
+      if(!digitalRead(KEYLS)) leftRacket-=speed;
+      if(!digitalRead(KEYLC)) leftRacket+=speed;
     }
 
     void rightButtons() {
-      if(!digitalRead(KEYRS)) rightRacket--;
-      if(!digitalRead(KEYRC)) rightRacket++;
+      if(!digitalRead(KEYRS)) rightRacket-=speed;
+      if(!digitalRead(KEYRC)) rightRacket+=speed;
     }
 
     void bounds() {
@@ -1216,6 +1218,11 @@ class Pong {
         ball.speedY = -1 * ball.speedY;
 
       }
+    }
+
+    void rightBounds() {
+      if(rightRacket > 64 - racketSize) rightRacket-=speed;
+      if(rightRacket < 0) rightRacket+=speed;
     }
 
     void win(bool player) {
@@ -1274,6 +1281,7 @@ class Pong {
 
     void play(){
       display.setTextSize(1);
+      display.setFont(&Picopixel);
       drawScene();
       while(1) {
         if(millis() - timer > mspt) {
@@ -1311,9 +1319,11 @@ class Pong {
 
       gameServer.begin();
 
-      int tmr = millis();
-
-      bool flag = true;
+      while(WiFi.softAPgetStationNum() == 0){
+        message("ready...", 100);
+      }
+      display.setFont(&Picopixel);
+      display.setTextSize(1);
       while(1) {
         gameServer.handleClient();
         if(millis() - timer > mspt) {
@@ -1322,12 +1332,6 @@ class Pong {
           moveBall();
           checkHit();
           drawScene();
-        }
-        if(millis() - tmr > 500) {
-          display.drawPixel(0, 0, flag);
-          display.display();
-          flag = !flag;
-          tmr = millis();
         }
       }
     }
@@ -1354,6 +1358,7 @@ class Pong {
     }
 
     void playClient() {
+      speed = 2;
       int n = WiFi.scanNetworks();
       int room;
       for (int i = 0; i < n; ++i) {
@@ -1385,6 +1390,8 @@ class Pong {
       display.println(mspt);
       display.println(racketSize);
       display.display();
+      display.setTextSize(1);
+      display.setFont(&Picopixel);
       while(1){
         if(millis() - timer > mspt) {
           rightButtons();
@@ -1582,8 +1589,10 @@ void setup() {
   EEPROM.begin(256);
   Wire.setClock(800000);
   Wire.begin(9, 10);
+  String hostname = "Korobochka " + String(WiFi.macAddress()).substring(0, 2);
   Serial.begin(115200);
   Serial.println("Starting Korobochka");
+  WiFi.setHostname(hostname.c_str());
   pinMode(KEYLS, INPUT_PULLUP);
   pinMode(KEYLC, INPUT_PULLUP);
   pinMode(KEYRC, INPUT_PULLUP);
@@ -1622,12 +1631,19 @@ void setup() {
 
       // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
       Serial.println("Start updating " + type);
+      display.clearDisplay();
+      display.setTextSize(2);
+      display.setCursor(10, 10);
+      display.print("Updating");
+      display.drawRect(12, 40, 102, 10, 1);
     })
     .onEnd([]() {
       Serial.println("\nEnd");
     })
     .onProgress([](unsigned int progress, unsigned int total) {
       Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+      display.fillRect(14, 42, (progress / (total / 100)), 6, 1);
+      display.display();
     })
     .onError([](ota_error_t error) {
       Serial.printf("Error[%u]: ", error);
@@ -1728,42 +1744,20 @@ int readInt(int addr) {
 
 void playSettings() {
   while (1) {
-    switch (korobkaMenu(6, settings)) {
-      case 0: {
-          byte key = korobkaMenu(4, keys);
+    switch (korobkaMenu(4, settings)) {
+      case 0:
+          {byte key = korobkaMenu(4, keys);
           int freq = notes[korobkaMenu(8, note_names)];
           writeInt(key * 2 + 4, freq);
-          message("Saved!", 400);
+          message("Saved!", 400);}
           break;
-        }
-      case 1: {
-          int count = korobkaInput(80, 401, 5, readInt(2));
+      case 1:
+          {int count = korobkaInput(80, 401, 5, readInt(2));
           writeInt(2, count);
-          message("Saved!", 400);
+          message("Saved!", 400);}
           break;
-        }
-      case 2: {
-          thermo_type = 0;
-          playThermometer();
-          break;
-        }
-      case 3: {
-          if (korobkaInput(0, 1000, 10, 500) == ROM_PASSWD) {
-            message("pass OK!", 400);
-            message("ROM addr:", 400);
-            int addr = korobkaInput(0, 256, 1, 0);
-            message("Data:", 400);
-            EEPROM.write(addr, korobkaInput(0, 256, 1, EEPROM.read(addr)));
-            EEPROM.commit();
-            message("Saved!", 400);
-          }
-          else {
-            message("wrong pass", 400);
-          }
 
-          break;
-        }
-      case 4: {
+      case 2: {
         display.clearDisplay();
         display.setCursor(0, 0);
         display.setTextSize(1);
@@ -1771,26 +1765,62 @@ void playSettings() {
         display.println(WiFi.macAddress());
         display.display();
         while(1);
-        break;
-
       }
-      case 5: {
-        int n = WiFi.scanNetworks();
-        display.clearDisplay();
-        display.setCursor(0, 0);
-        display.setTextSize(1);
-        for (int i = 0; i < n; ++i) {
-          display.println(WiFi.SSID(i));
+        break;
+      case 3: {
+        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "WiFi scanner", "I2C scanner"};
+        switch (korobkaMenu(4, tools)) {
+          case 0:
+            {thermo_type = 0;
+            playThermometer();}
+            break;
+          case 1:
+            {if (korobkaInput(0, 1000, 10, 500) == ROM_PASSWD) {
+              message("pass OK!", 400);
+              message("ROM addr:", 400);
+              int addr = korobkaInput(0, 256, 1, 0);
+              message("Data:", 400);
+              EEPROM.write(addr, korobkaInput(0, 256, 1, EEPROM.read(addr)));
+              EEPROM.commit();
+              message("Saved!", 400);
+            }
+            else {
+              message("wrong pass", 400);
+            }}
+            break;
+          case 2:
+            {int n = WiFi.scanNetworks();
+            display.clearDisplay();
+            display.setCursor(0, 0);
+            display.setTextSize(1);
+            for (int i = 0; i < n; ++i) {
+              display.println(WiFi.SSID(i));
+            }
+            display.display();
+            while(1);}
+            break;
+          case 3:
+            {Wire.begin();
+            display.clearDisplay();
+            display.setCursor(0, 0);
+            display.setTextSize(1);
+            for (byte i = 8; i < 120; i++) {
+              Wire.beginTransmission(i);
+              if(Wire.endTransmission() == 0) display.println(String(i, HEX));
+            }
+            display.display();
+            while(1);}
+            break;
+          }
         }
-        display.display();
-        while(1);
-        break;
+          break;
+        }
 
-      }
+
 
     }
   }
-}
+
 
 void message(char* mes, int dlay) {
   display.clearDisplay();
