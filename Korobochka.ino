@@ -1190,8 +1190,8 @@ class Pong {
       display.print(countLeft);
       display.setCursor(67, 28);
       display.print(countRight);
-      display.setCursor(0, 0);
-      display.print(requestMeter);
+      display.setCursor(0, 5);
+      display.print("ping "+String(requestMeter));
       display.drawFastVLine(64, 0, 64, 1);
       for(byte i = 0; i < 64; i += 8) {
         display.drawFastVLine(64, i, 4, 0);
@@ -1359,6 +1359,7 @@ class Pong {
 
     void playClient() {
       speed = 2;
+      message("searcing room", 10);
       int n = WiFi.scanNetworks();
       int room;
       for (int i = 0; i < n; ++i) {
@@ -1395,6 +1396,7 @@ class Pong {
       while(1){
         if(millis() - timer > mspt) {
           rightButtons();
+          rightBounds();
           getData();
           drawScene();
         }
