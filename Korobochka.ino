@@ -1770,8 +1770,8 @@ void playSettings() {
       }
         break;
       case 3: {
-        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "WiFi scanner", "I2C scanner"};
-        switch (korobkaMenu(4, tools)) {
+        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "WiFi scanner", "I2C scanner", "Осцилограф"};
+        switch (korobkaMenu(5, tools)) {
           case 0:
             {thermo_type = 0;
             playThermometer();}
@@ -1812,6 +1812,22 @@ void playSettings() {
             }
             display.display();
             while(1);}
+            break;
+          case 4:
+            {
+            display.clearDisplay();
+            display.setTextSize(1);
+            long int tmr = millis();
+            int gSpeed = 200;
+            while(1) {
+              if(millis() - tmr > gSpeed){
+                graphVoltmeter();
+                tmr = millis();
+              }
+              delay(1);
+              if(digitalRead(KEYRS)) gSpeed++;
+              if(digitalRead(KEYLS)) gSpeed--;
+            };}
             break;
           }
         }

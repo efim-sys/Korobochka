@@ -109,3 +109,31 @@ void graphThermometer() {
   display.display();
   delay(350);
 }
+
+
+
+void graphVoltmeter() {
+  int min = 100;
+  int max = -100;
+  for (byte n = BUFFER_SIZE; n > 0; n--) {
+    thermoBuffer[n] = thermoBuffer[n - 1];
+    if (thermoBuffer[n] < min) min = thermoBuffer[n];
+    if (thermoBuffer[n] > max) max = thermoBuffer[n];
+  }
+  thermoBuffer[0] = byte(analogRead(0)/100);
+  if (thermoBuffer[0] < min) min = thermoBuffer[0];
+  if (thermoBuffer[0] > max) max = thermoBuffer[0];
+  display.clearDisplay();
+  for (byte c = 0; c < BUFFER_SIZE - 1; c++) {
+    display.drawLine(c, 64 + min - 5 - thermoBuffer[c], c + 1, 64 + min - 5 - thermoBuffer[c + 1], 1);
+  }
+  display.setCursor(0, 0);
+  display.print(utf8rus("Щас: "));
+  display.print(thermoBuffer[0]);
+  display.print("C");
+  display.setCursor(70, 0);
+  display.print(utf8rus("Макс: "));
+  display.print(max);
+  display.print("C");
+  display.display();
+}
