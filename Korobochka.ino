@@ -3,7 +3,7 @@
 #include <Adafruit_MLX90614.h>
 //#include <Fonts/FreeMonoOblique12pt7b.h>
 #include <EEPROM.h>
-#include<Vector.h>
+//#include<Vector.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WebServer.h>
@@ -1159,9 +1159,11 @@ class Pong {
 
     String gamePass = "pongpong";
 
-    int leftRacket = 0;
-    int rightRacket = 0;
+    float leftRacket = 0;
+    float rightRacket = 0;
     int racketSize = 20;
+
+    float botSpeed = 0.5;
 
     int countLeft = 0;
     int countRight = 0;
@@ -1275,8 +1277,8 @@ class Pong {
     }
 
     void think() {
-      if(ball.y > leftRacket + racketSize / 2) leftRacket ++;
-      else leftRacket --;
+      if(ball.y > leftRacket + racketSize / 2) leftRacket += 0.5;
+      else leftRacket -= 0.5;
     }
 
     void play(){
