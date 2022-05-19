@@ -12,6 +12,7 @@
 #include <ArduinoOTA.h>
 #include <HTTPClient.h>
 #include <Fonts/Picopixel.h>
+#include "digital.h"
 //#include <Arduino_JSON.h>
 
 const char* ssid = "spynet-2.4g";
@@ -32,7 +33,7 @@ const char* password = "MW9pDbkK";
 
 #define BTN 0
 
-#define APPS 11  // Для 11 приложений на Korobochka
+#define APPS 12  // Для 11 приложений на Korobochka
 
 #define KEYRS 4
 #define KEYRC 3
@@ -1417,6 +1418,67 @@ void playGame() {
   gameServer.send(200, "text/plain", json);
 }
 
+struct {
+  struct {
+    int min = 1;
+    int max = 25;
+  } val;
+
+  void drawResult(int number) {
+    display.setFont(&seg40pt7b);
+    String s = String(number);
+    if(s.length() == 1) s = "0" + s;
+    display.clearDisplay();
+    display.setCursor(20, 60);
+    display.setTextSize(1);
+    display.print(s);
+    display.display();
+  }
+
+  void play() {
+    int tmr = millis();
+    int rand = 0;
+    gpio_wakeup_enable(GPIO_NUM_4, GPIO_INTR_LOW_LEVEL);
+    gpio_wakeup_enable(GPIO_NUM_3, GPIO_INTR_LOW_LEVEL);
+    gpio_wakeup_enable(GPIO_NUM_2, GPIO_INTR_LOW_LEVEL);
+    gpio_wakeup_enable(GPIO_NUM_1, GPIO_INTR_LOW_LEVEL);
+    esp_sleep_enable_gpio_wakeup();
+    drawResult(rand);
+    while(1) {
+
+      if(millis() - tmr >= 10000) {
+        display.clearDisplay();
+        display.display();
+        delay(50);
+        esp_light_sleep_start();
+        delay(300);
+        tmr = millis();
+        drawResult(rand);
+      }
+
+      if(!digitalRead(KEYRS) or !digitalRead(KEYRC)) {
+        delay(300);
+        while(digitalRead(KEYLS) and digitalRead(KEYLC) and digitalRead(KEYRC) and digitalRead(KEYRS)) {
+          rand = random(val.min, val.max);
+          drawResult(rand);
+          delay(10);
+        }
+        delay(300);
+        tmr = millis();
+
+      }
+      if(!digitalRead(KEYLS) or !digitalRead(KEYLC)) {
+        delay(300);
+        val.max = korobkaInput(2, 50, 1, val.max)+1;
+        delay(300);
+        tmr = millis();
+        drawResult(rand);
+      }
+
+    }
+  }
+} Sitin;
+
 void gamMenu() {
   int btn0 = !BTN;
   int btn2 = !BTN;
@@ -1465,6 +1527,10 @@ void gamMenu() {
       case 10:
         display.setCursor(40, 30);
         display.print("Pong");
+        break;
+      case 11:
+        display.setCursor(10, 30);
+        display.print(utf8rus("Карманный Ситин"));
         break;
 
     }
@@ -1577,6 +1643,10 @@ void gamMenu() {
 
       //playFilm();
     }
+    else if (mapnum == 11) {
+      Sitin.play();
+      //playFilm();
+    }
   }
 
 
@@ -1682,6 +1752,7 @@ void loop() {
 
 
 byte korobkaMenu(byte lenght, const char *elements[]) {
+  display.setFont();
   int mapnum = 0;
   while (1) {
     display.clearDisplay();
@@ -1712,6 +1783,7 @@ byte korobkaMenu(byte lenght, const char *elements[]) {
 }
 
 int korobkaInput(int mini, int maxi, int stepi, int def) {
+  display.setFont();
   int mapnum = def;
   while (1) {
     display.clearDisplay();
@@ -1844,6 +1916,7 @@ void playSettings() {
 
 void message(char* mes, int dlay) {
   display.clearDisplay();
+  display.setFont();
   display.setCursor(0, 0);
   display.setTextSize(2);
   display.print(utf8rus(mes));
@@ -1852,6 +1925,7 @@ void message(char* mes, int dlay) {
 }
 
 void korobkaReader(const char* file[], int lenght) {
+  display.setFont();
   display.clearDisplay();
   display.setTextSize(1);
   display.setCursor(0, 0);
