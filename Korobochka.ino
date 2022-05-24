@@ -1619,8 +1619,8 @@ void gamMenu() {
       playBeer();
     }
     else if (mapnum == 9) {
-      playKatafalk();
-      //playFilm();
+      //playKatafalk();
+      playFilm();
     }
     else if (mapnum == 10) {
       const char *menuMan[] = {"Вдвоем", "С копьютером", "Создать комнату", "Войти в комнату"};
@@ -1661,7 +1661,7 @@ void setup() {
   ledcAttachPin(5, 0);
   ledcWrite(0, 125);
   EEPROM.begin(256);
-  Wire.setClock(800000);
+  Wire.setClock(10000);
   Wire.begin(9, 10);
   String hostname = "Korobochka " + String(WiFi.macAddress()).substring(0, 2);
   Serial.begin(115200);
