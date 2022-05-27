@@ -36,7 +36,7 @@ Nano size gaming console
   3. Open preferences and paste the link to "additional links":
     https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_dev_index.json
   4. Go instruments > board > board manager and search for esp32
-  5. Install ESP32 core of newest version
+  5. Install ESP32 core of newest version (It can take more than 7 mins)
   6. Go instruments > board and select ESP32C3 Dev Module
   7. Go instruments > Partition Scheme and select Minimal SPIFFS
   8. Select port in Ports menu: /dev/ACM0(ESP32C3) or COM5(ESP32C3)
