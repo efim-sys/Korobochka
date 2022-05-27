@@ -6,9 +6,9 @@ Nano size gaming console
   2. Cat or Bread 2
   3. Tanchiki
   5. Study:
-    1. graph calc
-    2. formula
-    3. text
+      1. graph calc
+      2. formula
+      3. text
   6. Pong
   7. Portrait of Putin.png
   8. Polish cow.mp4
@@ -23,11 +23,11 @@ Nano size gaming console
       2. Cat or Bread delay
       3. About device
       4. Tools:
-        1. MLX90614 thermometer
-        2. EEPROM tool
-        3. WiFi scanner
-        4. I2C scanner
-        5. Oscilloscope
+          1. MLX90614 thermometer
+          2. EEPROM tool
+          3. WiFi scanner
+          4. I2C scanner
+          5. Oscilloscope
 
 # Setting Up programming software:
 
