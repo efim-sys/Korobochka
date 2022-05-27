@@ -33,7 +33,7 @@ const char* password = "MW9pDbkK";
 
 #define BTN 0
 
-#define APPS 12  // Для 11 приложений на Korobochka
+#define APPS 14  // Для 11 приложений на Korobochka
 
 #define KEYRS 4
 #define KEYRC 3
@@ -1532,6 +1532,14 @@ void gamMenu() {
         display.setCursor(10, 30);
         display.print(utf8rus("Карманный Ситин"));
         break;
+      case 12:
+        display.setCursor(10, 30);
+        display.print(utf8rus("Metaballs"));
+        break;
+      case 13:
+        display.setCursor(10, 30);
+        display.print(utf8rus("Пианино"));
+        break;
 
     }
     display.drawRect(0, 0, 128, 64 , 1);
@@ -1581,14 +1589,13 @@ void gamMenu() {
       playCats();
     }
     else if (mapnum == 2) {
-      playMetaBalls();
+      //playMetaBalls();
       playTanks();
     }
     else if (mapnum == 3) {
       playPhisics();
     }
     else if (mapnum == 4) {
-      playPiano();
       display.clearDisplay();
       display.drawBitmap(0, 0, putina_portret, 128, 64, 1);
       display.display();
@@ -1645,6 +1652,14 @@ void gamMenu() {
     }
     else if (mapnum == 11) {
       Sitin.play();
+      //playFilm();
+    }
+    else if (mapnum == 12) {
+      playMetaBalls();
+      //playFilm();
+    }
+    else if (mapnum == 13) {
+      playPiano();
       //playFilm();
     }
   }
