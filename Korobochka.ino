@@ -13,6 +13,7 @@
 #include <HTTPClient.h>
 #include <Fonts/Picopixel.h>
 #include "digital.h"
+#include <BleKeyboard.h>
 //#include <Arduino_JSON.h>
 
 const char* ssid = "spynet-2.4g";
@@ -33,7 +34,7 @@ const char* password = "MW9pDbkK";
 
 #define BTN 0
 
-#define APPS 14  // Для 11 приложений на Korobochka
+#define APPS 15  // Для 11 приложений на Korobochka
 
 #define KEYRS 4
 #define KEYRC 3
@@ -1479,6 +1480,37 @@ struct {
   }
 } Sitin;
 
+struct {
+  void play(){
+    BleKeyboard bleKeyboard("Korobochka BLE",  "efim.adior.ru", 99);
+    bleKeyboard.begin();
+    while(true){
+      if(bleKeyboard.isConnected()) {
+        if(!digitalRead(KEYLS)){
+          bleKeyboard.write(KEY_MEDIA_VOLUME_DOWN);
+          delay(200);
+        }
+        if(!digitalRead(KEYRC)){
+          bleKeyboard.write(KEY_MEDIA_VOLUME_UP);
+          delay(200);
+        }
+        if(!digitalRead(KEYLC)){
+          bleKeyboard.press(KEY_LEFT_CTRL);
+          bleKeyboard.press('C');
+          delay(100);
+          bleKeyboard.releaseAll();
+          delay(100);
+        }
+        if(!digitalRead(KEYRS)){
+          bleKeyboard.write(KEY_MEDIA_PLAY_PAUSE);
+          delay(200);
+        }
+      }
+    }
+  }
+
+} board;
+
 void gamMenu() {
   int btn0 = !BTN;
   int btn2 = !BTN;
@@ -1539,6 +1571,10 @@ void gamMenu() {
       case 13:
         display.setCursor(10, 30);
         display.print(utf8rus("Пианино"));
+        break;
+      case 14:
+        display.setCursor(10, 30);
+        display.print(utf8rus("Клавиатура"));
         break;
 
     }
@@ -1627,7 +1663,7 @@ void gamMenu() {
     }
     else if (mapnum == 9) {
       //playKatafalk();
-      playFilm();
+      //playFilm();
     }
     else if (mapnum == 10) {
       const char *menuMan[] = {"Вдвоем", "С копьютером", "Создать комнату", "Войти в комнату"};
@@ -1660,6 +1696,10 @@ void gamMenu() {
     }
     else if (mapnum == 13) {
       playPiano();
+      //playFilm();
+    }
+    else if (mapnum == 14) {
+      board.play();
       //playFilm();
     }
   }
