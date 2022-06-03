@@ -34,7 +34,7 @@ const char* password = "MW9pDbkK";
 
 #define BTN 0
 
-#define APPS 15  // Для 11 приложений на Korobochka
+#define APPS 16  // Для 11 приложений на Korobochka
 
 #define KEYRS 4
 #define KEYRC 3
@@ -1511,6 +1511,40 @@ struct {
 
 } board;
 
+struct {
+  String serverURL = "https://efim-sys.github.io/korobkaTube/";
+  void play() {
+    unsigned char frame [1024];
+    message("arr ok", 300);
+    WiFi.begin(ssid, password);
+    message("connecting to WiFi", 100);
+    display.clearDisplay();
+    while(WiFi.status() != WL_CONNECTED) {
+      delay(200);
+    }
+    HTTPClient http;
+    while(true){
+      for(int f = 0; f < 40; f++){
+
+        String path = serverURL + "pig/" + String(f) + ".ktube";
+        http.begin(path.c_str());
+        http.GET();
+        String payload = http.getString();
+        for(int j = 0; j < 10; j++) {
+          for(int i = 0; i < 1024; i++) {
+            frame[i] = payload[i+j*1024];
+          }
+          display.clearDisplay();
+          display.drawBitmap(0, 0, frame, 128, 64, 1);
+          display.display();
+          
+        }
+    }
+
+  }
+}
+} korobkaTube;
+
 void gamMenu() {
   int btn0 = !BTN;
   int btn2 = !BTN;
@@ -1575,6 +1609,10 @@ void gamMenu() {
       case 14:
         display.setCursor(10, 30);
         display.print(utf8rus("Клавиатура"));
+        break;
+      case 15:
+        display.setCursor(10, 30);
+        display.print(utf8rus("KTube"));
         break;
 
     }
@@ -1700,6 +1738,10 @@ void gamMenu() {
     }
     else if (mapnum == 14) {
       board.play();
+      //playFilm();
+    }
+    else if (mapnum == 15) {
+      korobkaTube.play();
       //playFilm();
     }
   }
