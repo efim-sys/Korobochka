@@ -14,7 +14,7 @@
 #include <Fonts/Picopixel.h>
 #include "digital.h"
 #include <BleKeyboard.h>
-//#include <Arduino_JSON.h>
+#include <ArduinoJson.h>
 
 const char* ssid = "spynet-2.4g";
 const char* password = "MW9pDbkK";
@@ -1514,7 +1514,7 @@ struct {
 struct {
   String serverURL = "https://efim-sys.github.io/korobkaTube/";
   void play() {
-    unsigned char frame [1024];
+    unsigned char frame[1024];
     message("arr ok", 300);
     WiFi.begin(ssid, password);
     message("connecting to WiFi", 100);
@@ -1522,14 +1522,39 @@ struct {
     while(WiFi.status() != WL_CONNECTED) {
       delay(200);
     }
+    message("get videos", 1);
     HTTPClient http;
-    while(true){
-      for(int f = 0; f < 40; f++){
+    http.begin(serverURL.c_str());
+    http.GET();
+    String payload = http.getString();
+    int countVideos = payload.substring(0, payload.indexOf('\n')).toInt();
+    payload.remove(0, payload.indexOf('\n')+1);
+    struct {
+      String name;
+      String url;
+      int samples;
+    } props[countVideos];
+    const char *vidMenu[countVideos];
 
-        String path = serverURL + "pig/" + String(f) + ".ktube";
+    for(int i = 0; i < countVideos; i++){
+      props[i].name = payload.substring(0, payload.indexOf('\n'));
+      vidMenu[i] = props[i].name.c_str();
+      payload.remove(0, payload.indexOf('\n')+1);
+      props[i].url = payload.substring(0, payload.indexOf('\n'));
+      payload.remove(0, payload.indexOf('\n')+1);
+      props[i].samples = payload.substring(0, payload.indexOf('\n')).toInt();
+      payload.remove(0, payload.indexOf('\n')+1);
+    }
+    byte n = korobkaMenu(countVideos, vidMenu);
+    int samples = props[n].samples;
+    const char* vidUrl = props[n].url.c_str();
+    while(true){
+      for(int f = 0; f < samples; f++){
+
+        String path = serverURL + String(vidUrl) + "/" + String(f) + ".ktube";
         http.begin(path.c_str());
         http.GET();
-        String payload = http.getString();
+        payload = http.getString();
         for(int j = 0; j < 10; j++) {
           for(int i = 0; i < 1024; i++) {
             frame[i] = payload[i+j*1024];
@@ -1537,7 +1562,7 @@ struct {
           display.clearDisplay();
           display.drawBitmap(0, 0, frame, 128, 64, 1);
           display.display();
-          
+
         }
     }
 
