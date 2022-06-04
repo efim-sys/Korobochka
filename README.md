@@ -43,6 +43,8 @@ Nano size gaming console
   8. Select port in Ports menu: /dev/ACM0(ESP32C3) or COM5(ESP32C3)
   9. Upload your firmware
 
+  ![Right settings](https://github.com/efim-sys/Korobochka/raw/main/settings.png "Make sure yuo have same settings")
+
 # Libraries required:
   1. Adafruit GFX
   2. Adafruit SSD1306
