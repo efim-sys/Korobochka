@@ -39,9 +39,9 @@ Nano size gaming console
   5. Install ESP32 core of newest version (It can take more than 7 mins)
   6. Go instruments > board and select ESP32C3 Dev Module
   7. Go instruments > Partition Scheme and select Minimal SPIFFS
-  7. Go instruments > USB CDC on Boot and select Enabled
-  8. Select port in Ports menu: /dev/ACM0(ESP32C3) or COM5(ESP32C3)
-  9. Upload your firmware
+  8. Go instruments > USB CDC on Boot and select Enabled
+  9. Select port in Ports menu: /dev/ACM0(ESP32C3) or COM5(ESP32C3)
+  10. Upload your firmware
 
   ![Right settings](https://github.com/efim-sys/Korobochka/raw/main/settings.png "Make sure yuo have same settings")
 
