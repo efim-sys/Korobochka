@@ -45,6 +45,8 @@ Nano size gaming console
 
   ![Right settings](https://github.com/efim-sys/Korobochka/raw/main/settings.png "Make sure yuo have same settings")
 
+  [Unlocking USB CDC](http://efim.adior.ru/index.php/46-korobochka-usb-cdc-unlock)
+
 # Libraries required:
   1. Adafruit GFX
   2. Adafruit SSD1306
