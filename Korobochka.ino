@@ -1545,25 +1545,32 @@ struct {
       props[i].samples = payload.substring(0, payload.indexOf('\n')).toInt();
       payload.remove(0, payload.indexOf('\n')+1);
     }
+    while(true){
     byte n = korobkaMenu(countVideos, vidMenu);
     int samples = props[n].samples;
     const char* vidUrl = props[n].url.c_str();
-    while(true){
-      for(int f = 0; f < samples; f++){
+    for(int f = 0; f < samples; f++){
 
-        String path = serverURL + String(vidUrl) + "/" + String(f) + ".ktube";
-        http.begin(path.c_str());
-        http.GET();
-        payload = http.getString();
-        for(int j = 0; j < 10; j++) {
-          for(int i = 0; i < 1024; i++) {
-            frame[i] = payload[i+j*1024];
-          }
-          display.clearDisplay();
-          display.drawBitmap(0, 0, frame, 128, 64, 1);
-          display.display();
-
+      String path = serverURL + String(vidUrl) + "/" + String(f) + ".ktube";
+      http.begin(path.c_str());
+      http.GET();
+      payload = http.getString();
+      for(int j = 0; j < 10; j++) {
+        for(int i = 0; i < 1024; i++) {
+          frame[i] = payload[i+j*1024];
         }
+        display.clearDisplay();
+        display.drawBitmap(0, 0, frame, 128, 64, 1);
+        display.display();
+        if(!digitalRead(KEYRS)) {
+          display.setCursor(0, 0);
+          display.print("Pause");
+          display.display();
+          delay(200);
+          while(digitalRead(KEYRS)) delay(50);
+          delay(200);
+        }
+      }
     }
 
   }
