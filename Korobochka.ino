@@ -1,6 +1,7 @@
 #include<Adafruit_GFX.h>
 #include<Adafruit_SSD1306.h>
 #include <Adafruit_MLX90614.h>
+
 //#include <Fonts/FreeMonoOblique12pt7b.h>
 #include <EEPROM.h>
 //#include<Vector.h>
@@ -34,7 +35,7 @@ const char* password = "MW9pDbkK";
 
 #define BTN 0
 
-#define APPS 16  // Для 11 приложений на Korobochka
+#define APPS 17  // Для 11 приложений на Korobochka
 
 #define KEYRS 4
 #define KEYRC 3
@@ -1155,6 +1156,30 @@ bool thermo_type = 1;
 
 WebServer gameServer(80);
 
+class KServo {
+public:
+  KServo(int ledcChannel) {
+    _ledcChannel = ledcChannel;
+    ledcSetup(_ledcChannel, 50, 12);
+  }
+  void attach(int gpio) {
+    _gpio = gpio;
+    ledcAttachPin(_gpio, 0);
+  }
+  void write(int angle) {
+    _duty = map(angle, 0, 180, 80, 510);
+    ledcWrite(_ledcChannel, _duty);
+  }
+private:
+  int _ledcChannel;
+  int _gpio;
+  int _duty;
+};
+
+
+
+
+
 class Pong {
   public:
     String gameName = "KorobochkaPong";
@@ -1420,6 +1445,89 @@ void playGame() {
 }
 
 struct {
+  void play() {
+    KServo myservo(0);
+    myservo.attach(6);
+    int pos = 90;
+    int radius = 40;
+    display.setTextSize(2);
+    while(true) {
+      if(!digitalRead(KEYLS)) pos --;
+      if(!digitalRead(KEYRS)) pos ++;
+      if(pos < 0) pos = 0;
+      if(pos > 180) pos = 180;
+      myservo.write(pos);
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.print(String(pos));
+      display.display();
+      delay(10);
+    }
+  }
+} servoTester;
+/*
+struct {
+  int pos = 90;
+  bool thrust = 0;
+  void play() {
+    pinMode(7, OUTPUT);
+    KServo myservo(0);
+    myservo.attach(6);
+    String apName = String("KCar") + String(" ") + String(WiFi.macAddress()).substring(0, 2);
+    Serial.println("Started wifi ap");
+    WiFi.enableAP(true);
+    delay(100);
+    WiFi.softAP(apName.c_str(), "1234567890");
+    delay(100);
+    //message(apName.c_str(), 100);
+    gameServer.on("/", sendIndex);
+    gameServer.on("/data", carData);
+    gameServer.begin();
+    while(true){
+      gameServer.handleClient();
+      delay(1);
+      digitalWrite(7, thrust);
+    }
+  }
+
+} KCar;
+
+void sendIndex() {
+
+const char page[] PROGMEM = R"=====(
+<!DOCTYPE html>
+<html>
+<head>
+ <title>KCar</title>
+</head>
+<body>
+ <h1>KoobochkaCar</h1>
+ <button onclick="a = 45">LEFT</button>
+ <button onclick="a = 90">CENTER</button>
+ <button onclick="a = 135">RIGHT</button>
+ <button onclick="t = 1">ON</button>
+ <button onclick="a = 0">OFF</button>
+ <script>
+ let a = 90
+ let t = 0
+ setInterval(function() {
+   fetch("/data?pos="+a+"&thrust="+t)
+ }, 100)
+ </script>
+</body>
+</html>
+)=====";
+
+  gameServer.send(200, "text/html", page);
+}
+void carData() {
+  KCar.thrust = gameServer.arg("thrust").toInt();
+  KCar.pos = bool(gameServer.arg("pos").toInt());
+  gameServer.send(200, "text/plain", "ok");
+}
+*/
+
+struct {
   struct {
     int min = 1;
     int max = 25;
@@ -1646,6 +1754,10 @@ void gamMenu() {
         display.setCursor(10, 30);
         display.print(utf8rus("KTube"));
         break;
+      case 16:
+        display.setCursor(10, 30);
+        display.print(utf8rus("Servo"));
+        break;
 
     }
     display.drawRect(0, 0, 128, 64 , 1);
@@ -1774,6 +1886,10 @@ void gamMenu() {
     }
     else if (mapnum == 15) {
       korobkaTube.play();
+      //playFilm();
+    }
+    else if (mapnum == 16) {
+      servoTester.play();
       //playFilm();
     }
   }
