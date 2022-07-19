@@ -873,6 +873,21 @@ const unsigned char piano_logo [] PROGMEM = {
   0x0f, 0x7f, 0xbf, 0xbc, 0x00, 0x03, 0xff, 0xff, 0xf0, 0x00
 };
 
+const unsigned char std_logo [] PROGMEM = {
+	// 'pixil-frame-0 (3), 34x34px
+	0x03, 0xff, 0xff, 0xf0, 0x00, 0x0e, 0x00, 0x00, 0x1c, 0x00, 0x18, 0x00, 0x00, 0x06, 0x00, 0x30,
+	0x00, 0x0e, 0x03, 0x00, 0x60, 0x0f, 0x0b, 0x01, 0x80, 0x40, 0x1d, 0x1f, 0x80, 0x80, 0xc0, 0x3f,
+	0x1f, 0x40, 0xc0, 0x80, 0x7f, 0x39, 0xe0, 0x40, 0x80, 0xfe, 0x19, 0xf0, 0x40, 0x81, 0xfc, 0x3f,
+	0x38, 0x40, 0x83, 0xf8, 0x1f, 0x3c, 0x40, 0x86, 0xbc, 0x0d, 0xee, 0x40, 0x87, 0xfe, 0x0f, 0xc6,
+	0x40, 0x84, 0xcf, 0x1f, 0xe0, 0x40, 0x87, 0x87, 0x3f, 0xf0, 0x40, 0x80, 0x02, 0x6c, 0x38, 0x40,
+	0x80, 0x00, 0xf8, 0x18, 0x40, 0x80, 0x01, 0xb0, 0x00, 0x40, 0x80, 0x01, 0xe0, 0x00, 0x40, 0x80,
+	0x02, 0xc4, 0x00, 0x40, 0x80, 0x07, 0x8e, 0x00, 0x40, 0x80, 0x0f, 0x0f, 0x00, 0x40, 0x80, 0x1e,
+	0x07, 0x80, 0x40, 0x80, 0x2c, 0x03, 0xc0, 0x40, 0x80, 0x78, 0x01, 0xe0, 0x40, 0x80, 0xd0, 0x00,
+	0xf0, 0x40, 0x81, 0x60, 0x00, 0x78, 0x40, 0xc1, 0xc0, 0x00, 0x38, 0xc0, 0x40, 0x00, 0x00, 0x18,
+	0x80, 0x60, 0x00, 0x00, 0x01, 0x80, 0x30, 0x00, 0x00, 0x03, 0x00, 0x18, 0x00, 0x00, 0x06, 0x00,
+	0x0e, 0x00, 0x00, 0x1c, 0x00, 0x03, 0xff, 0xff, 0xf0, 0x00
+};
+
 const unsigned char phisics_logo [] PROGMEM = {
   // 'phisics, 34x34px
   0x03, 0xff, 0xff, 0xf0, 0x00, 0x0e, 0x00, 0x00, 0x1c, 0x00, 0x18, 0x00, 0x00, 0x06, 0x00, 0x30,
@@ -1897,6 +1912,234 @@ void gamMenu() {
 
 }
 
+struct APP {
+  String title;
+  void (*execute)();
+  const unsigned char* logo;
+} ;
+
+void sinLine(int x1,int y1,int len,float angle,bool color){
+	int x2 = (x1 + (len * cos(angle)));
+	int y2 = (y1 + (len * sin(angle)));
+	display.drawLine(x1, y1, x2, y2, color);
+}
+
+void testPlay() {
+  display.clearDisplay();
+  float angle = 0;
+  while(1){
+    if(!digitalRead(KEYRC)){
+      angle += 0.05;
+      if(angle >= 0) angle = 0;
+      display.clearDisplay();
+      sinLine(64, 50, 20, angle*PI, 1);
+      display.display();
+      delay(50);
+    }
+    if(!digitalRead(KEYLS)){
+      angle -= 0.05;
+      if(angle <= -1) angle = -1;
+      display.clearDisplay();
+      sinLine(64, 50, 20, angle*PI, 1);
+      display.display();
+      delay(50);
+    }
+  }
+}
+
+
+void gameMenu() {
+  int numOfApps = 14;
+
+  int centerX = 64;
+
+  int centerY = 55;
+
+  int dst = 40;
+
+  APP appList[numOfApps];
+
+  appList[0].title = "Space Heroes";
+  appList[0].execute = playSpace;
+  appList[0].logo = space_heroes_logo;
+
+  appList[1].title = "Cat or Bread";
+  appList[1].execute = playCats;
+  appList[1].logo = cat_or_bread_logo;
+
+  appList[2].title = "Beer's";
+  appList[2].execute = playBeer;
+  appList[2].logo = beer_logo;
+
+  appList[3].title = "Tanchiki";
+  appList[3].execute = playTanks;
+  appList[3].logo = tanchiki_logo;
+
+  appList[4].title = "Записки";
+  appList[4].execute = playPhisics;
+  appList[4].logo = phisics_logo;
+
+  appList[5].title = "Портрет Путина";
+  appList[5].execute = []{
+    display.clearDisplay();
+    display.drawBitmap(0, 0, putina_portret, 128, 64, 1);
+    display.display();
+    delay(3000);
+    display.clearDisplay();
+    display.drawBitmap(0, 0, putina_portret_vtoroy, 128, 64, 1);
+    display.display();
+  };
+  appList[5].logo = std_logo;
+
+  appList[6].title = "Пианино";
+  appList[6].execute = playPiano;
+  appList[6].logo = piano_logo;
+
+  appList[7].title = "Карманный Ситин";
+  appList[7].execute = []{Sitin.play();};
+  appList[7].logo = std_logo;
+
+  appList[8].title = "Metaballs";
+  appList[8].execute = playMetaBalls;
+  appList[8].logo = std_logo;
+
+  appList[9].title = "Korobochka Tube";
+  appList[9].execute = []{korobkaTube.play();};
+  appList[9].logo = std_logo;
+
+  appList[10].title = "Pong";
+  appList[10].execute = []{
+    const char *menuMan[] = {"Вдвоем", "С копьютером", "Создать комнату", "Войти в комнату"};
+    switch(korobkaMenu(4, menuMan)) {
+      case 0:
+        pong.play();
+        break;
+      case 1:
+        pong.ai = true;
+        pong.play();
+        break;
+      case 2:
+        pong.playServer();
+        break;
+      case 3:
+        pong.playClient();
+        break;
+    }
+  };
+  appList[10].logo = std_logo;
+
+  appList[11].title = "Настройки";
+  appList[11].execute = playSettings;
+  appList[11].logo = std_logo;
+
+  appList[12].title = "Гос DooM'а";
+  appList[12].execute = play3d;
+  appList[12].logo = lambda_logo;
+
+  appList[13].title = "Польская Корова";
+  appList[13].execute = []{
+    while (1) {
+      for (byte i = 0; i < 8; i++) {
+        display.clearDisplay();
+        display.drawBitmap(0, 0, cow[i], 128, 64, 1);
+        display.display();
+        delay(230);
+      }
+    }
+  };
+  appList[13].logo = std_logo;
+
+  int mapnum = 0;
+
+  int inwork[3] = {numOfApps - 1, 0, 1};
+
+  float angle = -0.5;
+
+  display.drawBitmap(centerX + (dst * cos((angle-0.5)*PI)) - 17, centerY + (dst * sin((angle-0.5)*PI)), appList[inwork[0]].logo, 34, 34, 1);
+  display.drawBitmap(centerX + (dst * cos(angle*PI)) - 17, centerY + (dst * sin(angle*PI)), appList[inwork[1]].logo, 34, 34, 1);
+  display.drawBitmap(centerX + (dst * cos((angle+0.5)*PI)) - 17, centerY + (dst * sin((angle+0.5)*PI)), appList[inwork[2]].logo, 34, 34, 1);
+  display.setCursor(centerX-utf8rus(appList[mapnum].title).length()*3, 0);
+  display.print(utf8rus(appList[mapnum].title));
+  display.display();
+
+
+
+  while(digitalRead(KEYRS)) {
+    delay(5);
+    if(!digitalRead(KEYRC)){
+      mapnum--;
+      if(mapnum < 0) mapnum = numOfApps - 1;
+      for(angle = -0.5; angle <=-0.25; angle+=0.125) {
+        display.clearDisplay();
+        display.drawBitmap(centerX + (dst * cos((angle-0.5)*PI)) - 17, centerY + (dst * sin((angle-0.5)*PI)), appList[inwork[0]].logo, 34, 34, 1);
+        display.drawBitmap(centerX + (dst * cos(angle*PI)) - 17, centerY + (dst * sin(angle*PI)), appList[inwork[1]].logo, 34, 34, 1);
+        display.drawBitmap(centerX + (dst * cos((angle+0.5)*PI)) - 17, centerY + (dst * sin((angle+0.5)*PI)), appList[inwork[2]].logo, 34, 34, 1);
+        display.display();
+      }
+      for(int i = 0; i<3; i++){
+        inwork[i]--;
+        if(inwork[i]<0) inwork[i] = numOfApps - 1;
+      }
+      angle = -0.75;
+      for(angle = -0.75; angle <=-0.5; angle+=0.125) {
+        display.clearDisplay();
+        display.drawBitmap(centerX + (dst * cos((angle-0.5)*PI)) - 17, centerY + (dst * sin((angle-0.5)*PI)), appList[inwork[0]].logo, 34, 34, 1);
+        display.drawBitmap(centerX + (dst * cos(angle*PI)) - 17, centerY + (dst * sin(angle*PI)), appList[inwork[1]].logo, 34, 34, 1);
+        display.drawBitmap(centerX + (dst * cos((angle+0.5)*PI)) - 17, centerY + (dst * sin((angle+0.5)*PI)), appList[inwork[2]].logo, 34, 34, 1);
+        display.display();
+      }
+      angle = -0.5;
+      display.setCursor(centerX-utf8rus(appList[mapnum].title).length()*3, 0);
+      display.print(utf8rus(appList[mapnum].title));
+      display.display();
+    }
+    if(!digitalRead(KEYLS)){
+      mapnum++;
+      if(mapnum >= numOfApps) mapnum = 0;
+      for(angle = -0.5; angle >=-0.75; angle-=0.125) {
+        display.clearDisplay();
+        display.drawBitmap(centerX + (dst * cos((angle-0.5)*PI)) - 17, centerY + (dst * sin((angle-0.5)*PI)), appList[inwork[0]].logo, 34, 34, 1);
+        display.drawBitmap(centerX + (dst * cos(angle*PI)) - 17, centerY + (dst * sin(angle*PI)), appList[inwork[1]].logo, 34, 34, 1);
+        display.drawBitmap(centerX + (dst * cos((angle+0.5)*PI)) - 17, centerY + (dst * sin((angle+0.5)*PI)), appList[inwork[2]].logo, 34, 34, 1);
+        display.display();
+      }
+      for(int i = 0; i<3; i++){
+        inwork[i]++;
+        if(inwork[i]>=numOfApps) inwork[i] = 0;
+      }
+      angle = -0.25;
+      for(angle = -0.25; angle >=-0.5; angle-=0.125) {
+        display.clearDisplay();
+        display.drawBitmap(centerX + (dst * cos((angle-0.5)*PI)) - 17, centerY + (dst * sin((angle-0.5)*PI)), appList[inwork[0]].logo, 34, 34, 1);
+        display.drawBitmap(centerX + (dst * cos(angle*PI)) - 17, centerY + (dst * sin(angle*PI)), appList[inwork[1]].logo, 34, 34, 1);
+        display.drawBitmap(centerX + (dst * cos((angle+0.5)*PI)) - 17, centerY + (dst * sin((angle+0.5)*PI)), appList[inwork[2]].logo, 34, 34, 1);
+        display.display();
+      }
+      angle = -0.5;
+      display.setCursor(centerX-utf8rus(appList[mapnum].title).length()*3, 0);
+      display.print(utf8rus(appList[mapnum].title));
+      display.display();
+    }
+    /*
+    if(!digitalRead(KEYRC)){
+      mapnum++;
+      if(mapnum >= numOfApps) mapnum = 0;
+      display.clearDisplay();
+      display.drawBitmap(0, 0, appList[mapnum].logo, 34, 34, 1);
+      display.display();
+      delay(200);
+    }
+*/
+  }
+  for(int i = 36; i <= 44; i+=2) {
+    if(i != 36) display.drawRoundRect(centerX-(i-2)/2, centerY-dst+17-(i-2)/2, i-2, i-2, 10, 0);
+    display.drawRoundRect(centerX-i/2, centerY-dst+17-i/2, i, i, 10, 1);
+    display.display();
+    delay(30);
+  }
+  display.clearDisplay();
+  appList[mapnum].execute();
+}
 
 
 IPAddress IP;
@@ -1925,6 +2168,7 @@ void setup() {
   display.fillScreen(0);
   display.setTextColor(1, 0);
   display.clearDisplay();
+
   if (!digitalRead(KEYOTA)) {
     display.setTextSize(1);
     display.setCursor(5, 5);
@@ -1985,7 +2229,7 @@ void setup() {
     while (1) ArduinoOTA.handle();
   }
 
-  gamMenu();
+  gameMenu();
   display.clearDisplay();
 
 }
