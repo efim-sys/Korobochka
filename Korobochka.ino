@@ -1,9 +1,14 @@
+#define HW_CDC_ON_BOOT = TRUE
+
 #include<Adafruit_GFX.h>
 #include<Adafruit_SSD1306.h>
 #include <Adafruit_MLX90614.h>
-
+#include "SPIFFS.h"
+#include <FS.h>
+//#include "GyverButton.h"
 //#include <Fonts/FreeMonoOblique12pt7b.h>
 #include <EEPROM.h>
+
 //#include<Vector.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
@@ -17,8 +22,10 @@
 #include <BleKeyboard.h>
 #include <ArduinoJson.h>
 
-const char* ssid = "spynet-2.4g";
-const char* password = "MW9pDbkK";
+String ssid = "spynet-2.4g";
+String password = "MW9pDbkK";
+
+
 
 /*
   #include <WebSerial.h>
@@ -53,7 +60,12 @@ const char* password = "MW9pDbkK";
 
 Adafruit_SSD1306 display(128, 64, &Wire, OLED_RESET);
 //Adafruit_MLX90614 mlx = Adafruit_MLX90614();
-
+/*
+GButton keyrs(KEYRS);
+GButton keyls(KEYLS);
+GButton keyrc(KEYRC);
+GButton keylc(KEYLC);
+*/
 
 const unsigned char mycow1 [] PROGMEM = {
   // 'mycow1, 128x64px
@@ -1639,7 +1651,7 @@ struct {
   void play() {
     unsigned char frame[1024];
     message("arr ok", 300);
-    WiFi.begin(ssid, password);
+    WiFi.begin(ssid.c_str(), password.c_str());
     message("connecting to WiFi", 100);
     display.clearDisplay();
     while(WiFi.status() != WL_CONNECTED) {
@@ -1699,6 +1711,82 @@ struct {
   }
 }
 } korobkaTube;
+
+struct KeyProp {
+  String normalSymbol;
+  String shiftSymbol;
+};
+
+struct {
+  bool shift = false;
+  byte YOffset = 14;
+  byte XOffset = 4;
+  byte cellWidth = 12;
+  byte cellHeight = 10;
+  int cursorX = 0;
+  byte cursorY = 0;
+  String text;
+
+
+  KeyProp keyboard [5][10] = {
+    {(KeyProp) {"1", "!"}, (KeyProp) {"2", "@"},(KeyProp) {"3", "#"},(KeyProp) {"4", "$"},(KeyProp) {"5", "%"},(KeyProp) {"6", "^"},(KeyProp) {"7", "&"},(KeyProp) {"8", "*"},(KeyProp) {"9", "("},(KeyProp) {"0", ")"}},
+    {(KeyProp) {"q", "Q"},(KeyProp) {"w", "W"},(KeyProp) {"e", "E"},(KeyProp) {"r", "R"},(KeyProp) {"t", "T"},(KeyProp) {"y", "Y"},(KeyProp) {"u", "U"},(KeyProp) {"i", "I"},(KeyProp) {"o", "O"},(KeyProp) {"p", "P"}},
+    {(KeyProp) {"a", "A"},(KeyProp) {"s", "S"},(KeyProp) {"d", "D"},(KeyProp) {"f", "F"},(KeyProp) {"g", "G"},(KeyProp) {"h", "H"},(KeyProp) {"j", "J"},(KeyProp) {"k", "K"},(KeyProp) {"l", "L"},(KeyProp) {"Bk", "Bk"}},
+    {(KeyProp) {"z", "Z"},(KeyProp) {"x", "X"},(KeyProp) {"c", "C"},(KeyProp) {"v", "V"},(KeyProp) {"b", "B"},(KeyProp) {"n", "N"},(KeyProp) {"m", "M"},(KeyProp) {",", "<"},(KeyProp) {".", ">"},(KeyProp) {"En", "En"}},
+    {(KeyProp) {"Sh", "Sh"},(KeyProp) {"\'", "\""},(KeyProp) {":", ";"},(KeyProp) {"\\", "|"},(KeyProp) {String(char(0x03)), "~"},(KeyProp) {"-", "_"},(KeyProp) {"+", "="},(KeyProp) {" ", " "},(KeyProp) {"/", "?"},(KeyProp) {String(char(0x0b)), String(char(0x0c))}}
+  };
+
+  String play() {
+    shift = false;
+    text = "";
+    while(true){
+      updateScreen();
+      delay(150);
+      while(digitalRead(KEYRS) and digitalRead(KEYRC) and digitalRead(KEYLS) and digitalRead(KEYLC)) delay(2);
+      if(!digitalRead(KEYLC)) {
+        cursorX = (cursorX + 1) % 10;
+      }
+      if(!digitalRead(KEYRC)) {
+        cursorY = (cursorY + 1) % 5;
+      }
+      if(!digitalRead(KEYLS)) {
+        cursorX -= 1;
+        if(cursorX < 0) cursorX = 9;
+      }
+      if(!digitalRead(KEYRS)) {
+        String symbol = shift?keyboard[cursorY][cursorX].shiftSymbol:keyboard[cursorY][cursorX].normalSymbol;
+        if(symbol == "Sh") shift = !shift;
+        else if(symbol == "Bk") text.remove(text.length()-1);
+        else if(symbol == "En") break;
+        else text+=symbol;
+      }
+    }
+    return text;
+  }
+
+  void updateScreen() {
+    drawBase();
+    drawCursor();
+    display.setCursor(0, 0);
+    display.print(text);
+    display.display();
+  }
+
+  void drawBase() {
+    display.clearDisplay();
+    for(int i = 0; i < 5; i++){
+      for(int j = 0; j < 10; j++){
+        display.setCursor(cellWidth*j+XOffset+1+(cellWidth/2-keyboard[i][j].normalSymbol.length()*3), cellHeight*i+YOffset+1+(cellHeight/2-4));
+        display.print(shift?keyboard[i][j].shiftSymbol:keyboard[i][j].normalSymbol);
+      }
+    }
+  }
+
+  void drawCursor() {
+    display.drawRect(cursorX*cellWidth+XOffset, cursorY*cellHeight+YOffset, cellWidth, cellHeight, 1);
+  }
+
+} korobkaKeyboard;
 
 void gamMenu() {
   int btn0 = !BTN;
@@ -1949,7 +2037,7 @@ void testPlay() {
 
 
 void gameMenu() {
-  int numOfApps = 14;
+  int numOfApps = 15;
 
   int centerX = 64;
 
@@ -2048,6 +2136,10 @@ void gameMenu() {
     }
   };
   appList[13].logo = std_logo;
+
+  appList[14].title = "Dev Testing";
+  appList[14].execute = []{korobkaKeyboard.play();};
+  appList[14].logo = std_logo;
 
   int mapnum = 0;
 
@@ -2151,6 +2243,14 @@ void setup() {
   EEPROM.begin(256);
   Wire.setClock(10000);
   Wire.begin(9, 10);
+  if(!SPIFFS.begin(true)) message("SPIFFS init fail", 1000);
+  File wpa_ssid = SPIFFS.open(F("/wpa_ssid"), "r");
+  File wpa_pass = SPIFFS.open(F("/wpa_pass"), "r");
+  if(!wpa_pass) message("file open fail", 1000);
+
+  ssid = wpa_ssid.readString();
+  password = wpa_pass.readString();
+
   String hostname = "Korobochka " + String(WiFi.macAddress()).substring(0, 2);
   Serial.begin(115200);
   Serial.println("Starting Korobochka");
@@ -2168,7 +2268,6 @@ void setup() {
   display.fillScreen(0);
   display.setTextColor(1, 0);
   display.clearDisplay();
-
   if (!digitalRead(KEYOTA)) {
     display.setTextSize(1);
     display.setCursor(5, 5);
@@ -2178,7 +2277,7 @@ void setup() {
     display.print(ssid);
     display.display();
     WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
+    WiFi.begin(ssid.c_str(), password.c_str());
     while (WiFi.status() != WL_CONNECTED) {
       delay(100);
     }
@@ -2271,6 +2370,39 @@ byte korobkaMenu(byte lenght, const char *elements[]) {
   return mapnum;
 }
 
+byte korobkaMenuString(byte lenght, String elements[]) {
+  display.setFont();
+  int mapnum = 0;
+  while (1) {
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    for (byte i = 0; i < lenght; i++) {
+
+      display.print("  ");
+      display.println(utf8rus(elements[i]));
+    }
+    display.setCursor(0, 8 * mapnum);
+    display.print(">");
+    display.display();
+    bool up = !BTN;
+    bool down = !BTN;
+    bool enter = !BTN;
+    while (up == !BTN and down == !BTN and enter == !BTN) {
+      up = digitalRead(KEYLS);
+      down = digitalRead(KEYRC);
+      enter = digitalRead(KEYRS);
+    }
+    if (up == BTN) mapnum--; if (mapnum < 0) mapnum = lenght - 1; delay(100);
+    if (down == BTN) mapnum++; if (mapnum > lenght - 1) mapnum = 0; delay(100);
+    if (enter  == BTN) break;
+  }
+  delay(200);
+  return mapnum;
+}
+
+
+
 int korobkaInput(int mini, int maxi, int stepi, int def) {
   display.setFont();
   int mapnum = def;
@@ -2333,7 +2465,7 @@ void playSettings() {
       }
         break;
       case 3: {
-        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "WiFi scanner", "I2C scanner", "Осцилограф"};
+        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "WiFi подключение", "I2C scanner", "Осцилограф"};
         switch (korobkaMenu(5, tools)) {
           case 0:
             {thermo_type = 0;
@@ -2354,15 +2486,29 @@ void playSettings() {
             }}
             break;
           case 2:
-            {int n = WiFi.scanNetworks();
+            {
+            message("Поиск", 1);
+            int n = WiFi.scanNetworks();
             display.clearDisplay();
             display.setCursor(0, 0);
             display.setTextSize(1);
+            if(n > 8) n = 8;
+            String nets[n];
             for (int i = 0; i < n; ++i) {
-              display.println(WiFi.SSID(i));
+              nets[i] = WiFi.SSID(i);
             }
-            display.display();
-            while(1);}
+            n = korobkaMenuString(n, nets);
+            String password = korobkaKeyboard.play();
+            if(!SPIFFS.begin(true)) message("SPIFFS init fail", 1000);
+            File wpa_ssid = SPIFFS.open(F("/wpa_ssid"), "w");
+            File wpa_pass = SPIFFS.open(F("/wpa_pass"), "w");
+            if(!wpa_ssid) message("file open fail", 1000);
+            if(!wpa_ssid.print(WiFi.SSID(n))) message("writing fail", 1000);
+            wpa_pass.print(password);
+            wpa_ssid.close();
+            wpa_pass.close();
+            delay(100);
+            ESP.restart();}
             break;
           case 3:
             {Wire.begin();
@@ -2403,7 +2549,7 @@ void playSettings() {
   }
 
 
-void message(char* mes, int dlay) {
+void message(const char* mes, int dlay) {
   display.clearDisplay();
   display.setFont();
   display.setCursor(0, 0);
