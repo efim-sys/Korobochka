@@ -1,4 +1,4 @@
-
+/*
 
 byte lenght = 3;
 byte zmeyka[129][2];
@@ -49,3 +49,4 @@ void drawZmeyka() {
     display.fillRect(zmeyka[i][0] * 8, zmeyka[i][1] * 8, 8, 8, 1);
   }
 }
+*/

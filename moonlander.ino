@@ -1,5 +1,5 @@
 
-
+/*
 void playMoonlander() {
   display.clearDisplay();
   int terrainx=0;
@@ -31,3 +31,4 @@ float SmoothNoise2(float x, float y)
   center  =  Noise2(x, y) / 4;
   return (corners + sides + center);
 }
+*/

@@ -1,7 +1,7 @@
 #define smolPI 3.14
 
 void playMetaBalls() {
-      byte bulletsNum;
+      //byte bulletsNum;
       struct Player {
         float angle = 0;
         float x = 64.f;

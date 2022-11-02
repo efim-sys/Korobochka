@@ -2,7 +2,7 @@
 int noteos[] = {261, 329, 392, 493};
 
 void playPiano() {
-  nokia();
+  //nokia();
   for(byte i = 0; i<4; i++){
     noteos[i]=readInt(i*2+4);
   }
@@ -69,6 +69,6 @@ void nokia() {
     delay(227.2725);
     ledcWriteTone(0, 440);
     delay(909.09);
-    
+
 
 }

@@ -22,7 +22,7 @@ void playKatafalk() {
   WiFi.begin("Bioris", "ftotheded");
   int joyX = 0;
   int joyY = 0;
-  bool lock = false;
+  //bool lock = false;
   while(1){
     if(!digitalRead(9)){
       HTTPClient http;

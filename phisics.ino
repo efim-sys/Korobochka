@@ -19,8 +19,9 @@ void playPhisics() {
       while(1);
       break;
     case 2:
-      int k, b;
-      int prev[2];
+      int k = 0;
+      int b = 0;
+      int prev[2] = {0, 0};
       byte Gtype = korobkaMenu(5, graphTypes);
       if(Gtype<2){
         message("k = ?", 1000);
