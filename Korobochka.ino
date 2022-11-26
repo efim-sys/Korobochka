@@ -2454,6 +2454,58 @@ int readInt(int addr) {
   return EEPROM.read(addr) * 256 + EEPROM.read(addr + 1);
 }
 
+struct {
+  int choice = 0;
+
+  struct Argument {
+    int value = 50;
+    int max;
+    int min = 0;
+    int multiply = 10;
+  };
+
+  Argument args[2]; //freq duty
+
+  void draw() {
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.setTextSize(2);
+    display.print(args[1].value);
+    display.setTextSize(1);
+    display.setCursor(0, 50);
+    display.print(args[0].value);
+    display.display();
+  }
+
+  void play() {
+    args[0].value = 100;
+    args[0].max = 10000;
+
+    args[1].max = 255;
+    ledcSetup(0, args[0].value, 8);
+    ledcAttachPin(5, 0);
+    ledcWrite(0, args[1].value);
+    draw();
+    while(true) {
+      int change = 0;
+      while(change == 0) {
+        if(digitalRead(!KEYRS)) {
+          choice = (choice + 1) % 2;
+          draw();
+        }
+        if(digitalRead(!KEYRC)) change += 1;
+        else if(digitalRead(!KEYLS)) change -= 1;
+      }
+      if((args[choice].value + change * args[choice].multiply) >= args[choice].min && (args[choice].value + change * args[choice].multiply) <= args[choice].max) {
+        args[choice].value += args[choice].value + change * args[choice].multiply;
+        draw();
+        if(choice) ledcWrite(0, args[choice].value);
+        else ledcSetup(0, args[choice].value, 8);
+      }
+    }
+  }
+} generator;
+
 void playSettings() {
   while (1) {
     switch (korobkaMenu(4, settings)) {
@@ -2480,8 +2532,8 @@ void playSettings() {
       }
         break;
       case 3: {
-        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "WiFi подключение", "I2C scanner", "Осцилограф"};
-        switch (korobkaMenu(5, tools)) {
+        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "WiFi подключение", "I2C scanner", "Осцилограф", "Генератор PWM"};
+        switch (korobkaMenu(6, tools)) {
           case 0:
             {thermo_type = 0;
             playThermometer();}
@@ -2553,6 +2605,10 @@ void playSettings() {
               if(digitalRead(KEYLS)) gSpeed--;
             };}
             break;
+            case 5:
+              {
+              generator.play();}
+              break;
           }
         }
           break;
