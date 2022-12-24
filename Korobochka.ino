@@ -2325,7 +2325,7 @@ void update_started() {
   display.clearDisplay();
   display.setTextSize(2);
   display.setCursor(10, 10);
-  display.print("Downloading");
+  display.print("Download");
   display.drawRect(12, 40, 104, 10, 1);
   display.display();
 }
@@ -2336,6 +2336,9 @@ void update_progress(int cur, int total) {
 }
 
 struct {
+
+  //String server = "http://192.168.1.98:8000/Korobochka.ino.esp32c3.bin";
+  String server = "https://efim-sys.github.io/Korobochka/Korobochka.ino.esp32c3.bin";
   void update() {
     display.clearDisplay();
     display.setTextSize(1);
@@ -2361,23 +2364,9 @@ struct {
     display.display();
     httpUpdate.onStart(update_started);
     httpUpdate.onProgress(update_progress);
-    t_httpUpdate_return ret = httpUpdate.update(wificlient, "http://192.168.1.98:8000/Korobochka.ino.esp32c3.bin");
 
-    switch (ret) {
-      case HTTP_UPDATE_FAILED:
-        message(httpUpdate.getLastErrorString().c_str(), 100);
-        break;
-
-      case HTTP_UPDATE_NO_UPDATES:
-        message(utf8rus("Ничего нового").c_str(), 100);
-        break;
-
-      case HTTP_UPDATE_OK:
-        message(utf8rus("Успешно").c_str(), 100);
-        break;
-    }
-
-    while (1);
+    httpUpdate.update(wificlient, server.c_str());
+    message(httpUpdate.getLastErrorString().c_str(), 100);
   }
 } updaterOTA;
 
