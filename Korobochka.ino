@@ -17,6 +17,7 @@
 //#include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <HTTPClient.h>
+#include <HTTPUpdate.h>
 #include <Fonts/Picopixel.h>
 #include "digital.h"
 #include <BleKeyboard.h>
@@ -1062,7 +1063,7 @@ const unsigned char WiFi_logo [] PROGMEM = {
 
 const unsigned char *cow[8] PROGMEM = {mycow1, mycow2, mycow3, mycow4, mycow5, mycow6, mycow7, mycow8};
 
-const char *settings[] = {"music", "cat or bread delay", "About device", "Tools"};
+const char *settings[] = {"music", "cat or bread delay", "About device", "Tools", "Обновления"};
 const char *keys[] = {"KEY1", "KEY2", "KEY3", "KEY4"};
 const char *note_names[] = {"ДО", "РЕ", "МИ", "ФА", "СОЛЬ", "ЛЯ", "СИ", "ДО2"};
 const int notes[] = {261, 293, 329, 349, 392, 440, 493, 526};
@@ -1078,6 +1079,8 @@ const char *comedy_text[]  =
   "22 И словно тот, кто, тяжело дыша,\nНа берег выйдя из пучины пенной,\nГлядит назад, где волны бьют, страша,",
   "25 Так и мой дух, бегущий и смятенный,\nВспять обернулся, озирая путь,\nВсех уводящий к смерти предреченной."
 };
+
+WiFiClient wificlient;
 
 void(* resetFunc) (void) = 0;
 
@@ -2153,7 +2156,13 @@ void gameMenu() {
   appList[13].logo = std_logo;
 
   appList[14].title = "Dev Testing";
-  appList[14].execute = []{korobkaKeyboard.play();};
+  appList[14].execute = []{
+    Wire.begin();
+    Wire.beginTransmission(60);
+    byte c= 0xAE;
+    Wire.write(c);
+    Wire.endTransmission();
+  };
   appList[14].logo = std_logo;
 
   int mapnum = 0;
@@ -2248,42 +2257,10 @@ void gameMenu() {
   appList[mapnum].execute();
 }
 
-
 IPAddress IP;
 
-void setup() {
-  ledcSetup(0, 0, 8);
-  ledcAttachPin(5, 0);
-  ledcWrite(0, 125);
-  EEPROM.begin(256);
-  Wire.setClock(10000);
-  Wire.begin(9, 10);
-  if(!SPIFFS.begin(true)) message("SPIFFS init fail", 1000);
-  File wpa_ssid = SPIFFS.open(F("/wpa_ssid"), "r");
-  File wpa_pass = SPIFFS.open(F("/wpa_pass"), "r");
-  if(!wpa_pass) message("file open fail", 1000);
-
-  ssid = wpa_ssid.readString();
-  password = wpa_pass.readString();
-
-  String hostname = "Korobochka " + String(WiFi.macAddress()).substring(0, 2);
-  Serial.begin(115200);
-  Serial.println("Starting Korobochka");
-  WiFi.setHostname(hostname.c_str());
-  pinMode(KEYLS, INPUT_PULLUP);
-  pinMode(KEYLC, INPUT_PULLUP);
-  pinMode(KEYRC, INPUT_PULLUP);
-  pinMode(KEYRS, INPUT_PULLUP);
-  ledcSetup(TONEPIN, 300, 255);
-  randomSeed(analogRead(36));
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-  display.dim(0);
-  display.cp437(true);
-  display.setRotation(0);
-  display.fillScreen(0);
-  display.setTextColor(1, 0);
-  display.clearDisplay();
-  if (!digitalRead(KEYOTA)) {
+struct {
+  void update() {
     display.setTextSize(1);
     display.setCursor(5, 5);
     display.print("  Firmware upload!");
@@ -2312,7 +2289,7 @@ void setup() {
       display.setTextSize(2);
       display.setCursor(10, 10);
       display.print("Updating");
-      display.drawRect(12, 40, 102, 10, 1);
+      display.drawRect(12, 40, 104, 10, 1);
     })
     .onEnd([]() {
       Serial.println("\nEnd");
@@ -2324,11 +2301,11 @@ void setup() {
     })
     .onError([](ota_error_t error) {
       Serial.printf("Error[%u]: ", error);
-      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-      else if (error == OTA_END_ERROR) Serial.println("End Failed");
+      if (error == OTA_AUTH_ERROR) message("Auth Failed", 1000);
+      else if (error == OTA_BEGIN_ERROR) message("Begin Failed", 1000);
+      else if (error == OTA_CONNECT_ERROR) message("Connect Failed", 1000);
+      else if (error == OTA_RECEIVE_ERROR) message("Receive Failed", 1000);
+      else if (error == OTA_END_ERROR) message("End Failed", 1000);
     });
 
     ArduinoOTA.begin();
@@ -2341,6 +2318,92 @@ void setup() {
     display.print(IP);
     display.display();
     while (1) ArduinoOTA.handle();
+  }
+} arduinoOTA;
+
+struct {
+  void update_started() {
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setCursor(10, 10);
+    display.print("Downloading");
+    display.drawRect(12, 40, 104, 10, 1);
+    display.display();
+  }
+
+  void update_progress(int cur, int total) {
+    display.fillRect(14, 42, (cur / (total / 100)), 6, 1);
+    display.display();
+  }
+  void update() {
+    display.setTextSize(1);
+    display.setCursor(5, 5);
+    display.print("  Firmware upload!");
+    display.setCursor(5, 45);
+    display.println("Connecting to ");
+    display.print(utf8rus(ssid));
+    display.display();
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid.c_str(), password.c_str());
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(100);
+    }
+    IP = WiFi.localIP();
+
+    t_httpUpdate_return ret = httpUpdate.update(wificlient, "http://server/file.bin");
+
+    switch (ret) {
+      case HTTP_UPDATE_FAILED:
+        message(httpUpdate.getLastErrorString().c_str(), 100);
+        break;
+
+      case HTTP_UPDATE_NO_UPDATES:
+        message(utf8rus("Ничего нового").c_str(), 100);
+        break;
+
+      case HTTP_UPDATE_OK:
+        message(utf8rus("Успешно").c_str(), 100);
+        break;
+    }
+
+    while (1);
+  }
+} updaterOTA;
+
+void setup() {
+  ledcSetup(0, 0, 8);
+  ledcAttachPin(5, 0);
+  ledcWrite(0, 125);
+  EEPROM.begin(256);
+
+  Wire.begin(9, 10);
+  if(!SPIFFS.begin(true)) message("SPIFFS init fail", 1000);
+  File wpa_ssid = SPIFFS.open(F("/wpa_ssid"), "r");
+  File wpa_pass = SPIFFS.open(F("/wpa_pass"), "r");
+  if(!wpa_pass) message("file open fail", 1000);
+
+  ssid = wpa_ssid.readString();
+  password = wpa_pass.readString();
+
+  String hostname = "Korobochka " + String(WiFi.macAddress()).substring(0, 2);
+  Serial.begin(115200);
+  Serial.println("Starting Korobochka");
+  WiFi.setHostname(hostname.c_str());
+  pinMode(KEYLS, INPUT_PULLUP);
+  pinMode(KEYLC, INPUT_PULLUP);
+  pinMode(KEYRC, INPUT_PULLUP);
+  pinMode(KEYRS, INPUT_PULLUP);
+  ledcSetup(TONEPIN, 300, 255);
+  randomSeed(analogRead(36));
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.dim(0);
+  display.cp437(true);
+  display.setRotation(0);
+  display.fillScreen(0);
+  display.setTextColor(1, 0);
+  display.clearDisplay();
+  if (!digitalRead(KEYOTA)) {
+    arduinoOTA.update();
   }
 
   gameMenu();
@@ -2508,7 +2571,7 @@ struct {
 
 void playSettings() {
   while (1) {
-    switch (korobkaMenu(4, settings)) {
+    switch (korobkaMenu(5, settings)) {
       case 0:
           {byte key = korobkaMenu(4, keys);
           int freq = notes[korobkaMenu(8, note_names)];
@@ -2612,6 +2675,11 @@ void playSettings() {
           }
         }
           break;
+        case 4:
+        {
+          updaterOTA.update();
+        }
+        break;
         }
 
 
