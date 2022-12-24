@@ -2321,20 +2321,21 @@ struct {
   }
 } arduinoOTA;
 
-struct {
-  void update_started() {
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setCursor(10, 10);
-    display.print("Downloading");
-    display.drawRect(12, 40, 104, 10, 1);
-    display.display();
-  }
+void update_started() {
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setCursor(10, 10);
+  display.print("Downloading");
+  display.drawRect(12, 40, 104, 10, 1);
+  display.display();
+}
 
-  void update_progress(int cur, int total) {
-    display.fillRect(14, 42, (cur / (total / 100)), 6, 1);
-    display.display();
-  }
+void update_progress(int cur, int total) {
+  display.fillRect(14, 42, (cur / (total / 100)), 6, 1);
+  display.display();
+}
+
+struct {
   void update() {
     display.clearDisplay();
     display.setTextSize(1);
@@ -2351,7 +2352,16 @@ struct {
     }
     IP = WiFi.localIP();
 
-    t_httpUpdate_return ret = httpUpdate.update(wificlient, "https://efim-sys.github.io/Korobochka/Korobochka.ino.esp32c3.bin");
+    display.clearDisplay();
+    display.setCursor(5, 5);
+    display.print("  Firmware upload!");
+    display.setCursor(5, 45);
+    display.print("IP: ");
+    display.print(IP);
+    display.display();
+    httpUpdate.onStart(update_started);
+    httpUpdate.onProgress(update_progress);
+    t_httpUpdate_return ret = httpUpdate.update(wificlient, "http://192.168.1.98:8000/Korobochka.ino.esp32c3.bin");
 
     switch (ret) {
       case HTTP_UPDATE_FAILED:
@@ -2591,6 +2601,7 @@ void playSettings() {
         display.setTextSize(1);
         WiFi.mode(WIFI_MODE_STA);
         display.println(WiFi.macAddress());
+        display.println(__TIME__);
         display.display();
         while(1);
       }
