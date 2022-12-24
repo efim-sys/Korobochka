@@ -2366,7 +2366,7 @@ struct {
     httpUpdate.onProgress(update_progress);
 
     httpUpdate.update(wificlient, server.c_str());
-    message(httpUpdate.getLastErrorString().c_str(), 100);
+    message(httpUpdate.getLastErrorString().c_str(), 3000);
   }
 } updaterOTA;
 
