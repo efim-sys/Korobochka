@@ -2336,6 +2336,7 @@ struct {
     display.display();
   }
   void update() {
+    display.clearDisplay();
     display.setTextSize(1);
     display.setCursor(5, 5);
     display.print("  Firmware upload!");
@@ -2350,7 +2351,7 @@ struct {
     }
     IP = WiFi.localIP();
 
-    t_httpUpdate_return ret = httpUpdate.update(wificlient, "http://server/file.bin");
+    t_httpUpdate_return ret = httpUpdate.update(wificlient, "https://efim-sys.github.io/Korobochka/Korobochka.ino.esp32c3.bin");
 
     switch (ret) {
       case HTTP_UPDATE_FAILED:
