@@ -22,6 +22,7 @@
 #include "digital.h"
 #include <BleKeyboard.h>
 #include <ArduinoJson.h>
+#include <time.h>
 
 String ssid = "spynet-2.4g";
 String password = "MW9pDbkK";
@@ -1080,7 +1081,7 @@ const char *comedy_text[]  =
   "25 Так и мой дух, бегущий и смятенный,\nВспять обернулся, озирая путь,\nВсех уводящий к смерти предреченной."
 };
 
-WiFiClient wificlient;
+WiFiClientSecure wificlient;
 
 void(* resetFunc) (void) = 0;
 
@@ -2336,7 +2337,89 @@ void update_progress(int cur, int total) {
 }
 
 struct {
+  const char* rootCACertificate =
+      "-----BEGIN CERTIFICATE-----\n"
+      "MIIHFDCCBfygAwIBAgIQCLS/dX/bKN3zuMTJNXxaSTANBgkqhkiG9w0BAQsFADBP\n"
+      "MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMSkwJwYDVQQDEyBE\n"
+      "aWdpQ2VydCBUTFMgUlNBIFNIQTI1NiAyMDIwIENBMTAeFw0yMjA0MDcwMDAwMDBa\n"
+      "Fw0yMzA0MDcyMzU5NTlaMGgxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9y\n"
+      "bmlhMRYwFAYDVQQHEw1TYW4gRnJhbmNpc2NvMRUwEwYDVQQKEwxHaXRIdWIsIElu\n"
+      "Yy4xFTATBgNVBAMMDCouZ2l0aHViLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEP\n"
+      "ADCCAQoCggEBALyqZjatk2jnqiWmp6eusW70yJlreKz8mllyRSPxnIVeuwCHGzeQ\n"
+      "pGOOZkdRiBLcC2SWM3WgwQjBVBzqS1hWgoP5e6hzuXvGM3anlgJDE9dDUJfdC/Is\n"
+      "nzB4Q5Y4TU3FcRCUaK4GMoJGC0fu0fDbH927yKAnvdErG4u+jFSqIidwEaEfPWCC\n"
+      "o3xCyQLHTknXQ9aaDvU6GHNX0us6G+bjdErIwQtC56F0ke7biV0A/DWX5V+hVsVY\n"
+      "jY9JbYNx+KFjmUxLibccXzXs0pJ+a6Xa4OhhrFebPwS+SQA+gxTTvZotj4J5kf2l\n"
+      "nM9H+1whu6I5qPebhlTRTKpxdPm9V647Zj8CAwEAAaOCA9EwggPNMB8GA1UdIwQY\n"
+      "MBaAFLdrouqoqoSMeeq02g+YssWVdrn0MB0GA1UdDgQWBBRWmrM0shNZi0idiZiI\n"
+      "7l3ryIMwdDB7BgNVHREEdDByggwqLmdpdGh1Yi5jb22CDnd3dy5naXRodWIuY29t\n"
+      "gglnaXRodWIuaW+CCmdpdGh1Yi5jb22CCyouZ2l0aHViLmlvghVnaXRodWJ1c2Vy\n"
+      "Y29udGVudC5jb22CFyouZ2l0aHVidXNlcmNvbnRlbnQuY29tMA4GA1UdDwEB/wQE\n"
+      "AwIFoDAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwgY8GA1UdHwSBhzCB\n"
+      "hDBAoD6gPIY6aHR0cDovL2NybDMuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0VExTUlNB\n"
+      "U0hBMjU2MjAyMENBMS00LmNybDBAoD6gPIY6aHR0cDovL2NybDQuZGlnaWNlcnQu\n"
+      "Y29tL0RpZ2lDZXJ0VExTUlNBU0hBMjU2MjAyMENBMS00LmNybDA+BgNVHSAENzA1\n"
+      "MDMGBmeBDAECAjApMCcGCCsGAQUFBwIBFhtodHRwOi8vd3d3LmRpZ2ljZXJ0LmNv\n"
+      "bS9DUFMwfwYIKwYBBQUHAQEEczBxMCQGCCsGAQUFBzABhhhodHRwOi8vb2NzcC5k\n"
+      "aWdpY2VydC5jb20wSQYIKwYBBQUHMAKGPWh0dHA6Ly9jYWNlcnRzLmRpZ2ljZXJ0\n"
+      "LmNvbS9EaWdpQ2VydFRMU1JTQVNIQTI1NjIwMjBDQTEtMS5jcnQwCQYDVR0TBAIw\n"
+      "ADCCAX8GCisGAQQB1nkCBAIEggFvBIIBawFpAHYA6D7Q2j71BjUy51covIlryQPT\n"
+      "y9ERa+zraeF3fW0GvW4AAAGABfvdbAAABAMARzBFAiAGLk49aFP9ARwPXCa59WnI\n"
+      "f5jIU5eFmqR6/W3Zm38KiwIhAIp8FySKqbKk600uO4iPsS6TW8hJl67PprwXYMlr\n"
+      "o3wPAHcANc8ZG7+xbFe/D61MbULLu7YnICZR6j/hKu+oA8M71kwAAAGABfvdXQAA\n"
+      "BAMASDBGAiEAjFarHnzcbBvQ8//um0zVd4G3T5zbW4XSUIJSTc5JGo8CIQDaT5K8\n"
+      "pji9egTYSypP9XfRK+Z2wID3j43uuGjiKSOKyQB2ALNzdwfhhFD4Y4bWBancEQlK\n"
+      "eS2xZwwLh9zwAw55NqWaAAABgAX73YsAAAQDAEcwRQIhAO/PWksY7Zd7W5NJr3e4\n"
+      "xRkx8J6Qv7a33VA3tkm96k4WAiBshJWPE2BjKzuQ/KEfiKnvD4dDa3btkmcWlpiD\n"
+      "R8AvQDANBgkqhkiG9w0BAQsFAAOCAQEARtY8iVMqqBCXGZj2NRhpxA4eS2b/e/56\n"
+      "JhnRWGz3wxf0aRjbaZ2sUH3aHe1UDyg4jVPgnSLsGnBMmN5Rk32uiB/5v6/uRhCa\n"
+      "l26Yi9MYbeQpt0980MxT5hhv8bThRiNa77+oAOcrYMJEGIf2/9k0yoefblEZTR02\n"
+      "6UU6pkDhxjMtpyNRr+IdqQM/4lCM6nu8FZ/qaLltvta1Enq+jEwEObo/PoBoQJzJ\n"
+      "j7hcu7rkyPQIK1raQ9pK7uFJ2/FgtxIUuT+by06LnUp82VB7QxlniXO2R4XgDzWd\n"
+      "umlpkAFJQvZ+Sa2rSdjynrTDedjQIv3s1jH2Tvao5fR23tW2XAQhVg==\n"
+      "-----END CERTIFICATE-----\n"
+      "-----BEGIN CERTIFICATE-----\n"
+      "MIIEvjCCA6agAwIBAgIQBtjZBNVYQ0b2ii+nVCJ+xDANBgkqhkiG9w0BAQsFADBh\n"
+      "MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\n"
+      "d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD\n"
+      "QTAeFw0yMTA0MTQwMDAwMDBaFw0zMTA0MTMyMzU5NTlaME8xCzAJBgNVBAYTAlVT\n"
+      "MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxKTAnBgNVBAMTIERpZ2lDZXJ0IFRMUyBS\n"
+      "U0EgU0hBMjU2IDIwMjAgQ0ExMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC\n"
+      "AQEAwUuzZUdwvN1PWNvsnO3DZuUfMRNUrUpmRh8sCuxkB+Uu3Ny5CiDt3+PE0J6a\n"
+      "qXodgojlEVbbHp9YwlHnLDQNLtKS4VbL8Xlfs7uHyiUDe5pSQWYQYE9XE0nw6Ddn\n"
+      "g9/n00tnTCJRpt8OmRDtV1F0JuJ9x8piLhMbfyOIJVNvwTRYAIuE//i+p1hJInuW\n"
+      "raKImxW8oHzf6VGo1bDtN+I2tIJLYrVJmuzHZ9bjPvXj1hJeRPG/cUJ9WIQDgLGB\n"
+      "Afr5yjK7tI4nhyfFK3TUqNaX3sNk+crOU6JWvHgXjkkDKa77SU+kFbnO8lwZV21r\n"
+      "eacroicgE7XQPUDTITAHk+qZ9QIDAQABo4IBgjCCAX4wEgYDVR0TAQH/BAgwBgEB\n"
+      "/wIBADAdBgNVHQ4EFgQUt2ui6qiqhIx56rTaD5iyxZV2ufQwHwYDVR0jBBgwFoAU\n"
+      "A95QNVbRTLtm8KPiGxvDl7I90VUwDgYDVR0PAQH/BAQDAgGGMB0GA1UdJQQWMBQG\n"
+      "CCsGAQUFBwMBBggrBgEFBQcDAjB2BggrBgEFBQcBAQRqMGgwJAYIKwYBBQUHMAGG\n"
+      "GGh0dHA6Ly9vY3NwLmRpZ2ljZXJ0LmNvbTBABggrBgEFBQcwAoY0aHR0cDovL2Nh\n"
+      "Y2VydHMuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0R2xvYmFsUm9vdENBLmNydDBCBgNV\n"
+      "HR8EOzA5MDegNaAzhjFodHRwOi8vY3JsMy5kaWdpY2VydC5jb20vRGlnaUNlcnRH\n"
+      "bG9iYWxSb290Q0EuY3JsMD0GA1UdIAQ2MDQwCwYJYIZIAYb9bAIBMAcGBWeBDAEB\n"
+      "MAgGBmeBDAECATAIBgZngQwBAgIwCAYGZ4EMAQIDMA0GCSqGSIb3DQEBCwUAA4IB\n"
+      "AQCAMs5eC91uWg0Kr+HWhMvAjvqFcO3aXbMM9yt1QP6FCvrzMXi3cEsaiVi6gL3z\n"
+      "ax3pfs8LulicWdSQ0/1s/dCYbbdxglvPbQtaCdB73sRD2Cqk3p5BJl+7j5nL3a7h\n"
+      "qG+fh/50tx8bIKuxT8b1Z11dmzzp/2n3YWzW2fP9NsarA4h20ksudYbj/NhVfSbC\n"
+      "EXffPgK2fPOre3qGNm+499iTcc+G33Mw+nur7SpZyEKEOxEXGlLzyQ4UfaJbcme6\n"
+      "ce1XR2bFuAJKZTRei9AqPCCcUZlM51Ke92sRKw2Sfh3oius2FkOH6ipjv3U/697E\n"
+      "A7sKPPcw7+uvTPyLNhBzPvOk\n"
+      "-----END CERTIFICATE-----\n";
 
+  void setClock() {
+    configTime(0, 0, "pool.ntp.org", "time.nist.gov");  // UTC
+    time_t now = time(nullptr);
+    while (now < 8 * 3600 * 2) {
+      yield();
+      delay(500);
+      Serial.print(F("."));
+      now = time(nullptr);
+    }
+    struct tm timeinfo;
+    gmtime_r(&now, &timeinfo);
+    Serial.print(asctime(&timeinfo));
+  }
   //String server = "http://192.168.1.98:8000/Korobochka.ino.esp32c3.bin";
   String server = "https://efim-sys.github.io/Korobochka/Korobochka.ino.esp32c3.bin";
   void update() {
@@ -2364,6 +2447,12 @@ struct {
     display.display();
     httpUpdate.onStart(update_started);
     httpUpdate.onProgress(update_progress);
+
+    setClock();
+
+    wificlient.setCACert(rootCACertificate);
+
+    wificlient.setTimeout(12000 / 1000);
 
     httpUpdate.update(wificlient, server.c_str());
     message(httpUpdate.getLastErrorString().c_str(), 3000);
