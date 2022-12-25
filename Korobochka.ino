@@ -2499,7 +2499,7 @@ void setup() {
   ssid = wpa_ssid.readString();
   password = wpa_pass.readString();
 
-  String hostname = "Korobochka " + String(WiFi.macAddress()).substring(0, 2);
+  String hostname = "Korobochka " + String(WiFi.macAddress()).substring(15);
   Serial.begin(115200);
   Serial.println("Starting Korobochka");
   WiFi.setHostname(hostname.c_str());
