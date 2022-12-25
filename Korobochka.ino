@@ -1617,11 +1617,24 @@ struct {
     while(1) {
 
       if(millis() - tmr >= 10000) {
-        display.clearDisplay();
-        display.display();
+        Wire.begin();
+        Wire.beginTransmission(60);
+        byte cmode = 0x00;
+        byte command = 0xAE;
+        Wire.write(cmode);
+        Wire.write(command);
+        Wire.endTransmission();
         delay(50);
         esp_light_sleep_start();
+
         delay(300);
+
+        command = 0xAF;
+        Wire.begin();
+        Wire.beginTransmission(60);
+        Wire.write(cmode);
+        Wire.write(command);
+        Wire.endTransmission();
         tmr = millis();
         drawResult(rand);
       }
@@ -2197,15 +2210,21 @@ void gameMenu() {
   appList[14].title = "Часы";
   appList[14].execute = []{
     watch.play();
-    /*
-    Wire.begin();
-    Wire.beginTransmission(60);
-    byte c= 0xAE;
-    Wire.write(c);
-    Wire.endTransmission();
-    */
   };
   appList[14].logo = watch_logo;
+/*
+  appList[15].title = "Тестирование";
+  appList[15].execute = []{
+    Wire.begin();
+    Wire.beginTransmission(60);
+    byte cmode = 0x00;
+    byte command = 0xAE;
+    Wire.write(cmode);
+    Wire.write(command);
+    Wire.endTransmission();
+  };
+  appList[15].logo = watch_logo;
+*/
 
   int mapnum = 0;
 
