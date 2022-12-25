@@ -2721,7 +2721,8 @@ void playSettings() {
         display.setTextSize(1);
         WiFi.mode(WIFI_MODE_STA);
         display.println(WiFi.macAddress());
-        display.println(__TIME__);
+        display.println("Build datetime: ");
+        display.println(String(__DATE__) + " " + String(__TIME__));
         display.display();
         while(1);
       }
