@@ -2054,6 +2054,27 @@ void testPlay() {
   }
 }
 
+struct {
+  void play() {
+    message("Connecting to WiFi...", 1);
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid.c_str(), password.c_str());
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(100);
+    }
+    configTime(3600*3, 0, "pool.ntp.org");
+    struct tm timeinfo;
+    while(true) {
+      if(!getLocalTime(&timeinfo)){
+        message("Can't get time", 1000);
+      }
+      else {
+        message(String(asctime(&timeinfo)).c_str(), 1000);
+      }
+    }
+  }
+} watch;
+
 
 void gameMenu() {
   int numOfApps = 15;
@@ -2158,11 +2179,14 @@ void gameMenu() {
 
   appList[14].title = "Dev Testing";
   appList[14].execute = []{
+    watch.play();
+    /*
     Wire.begin();
     Wire.beginTransmission(60);
     byte c= 0xAE;
     Wire.write(c);
     Wire.endTransmission();
+    */
   };
   appList[14].logo = std_logo;
 
@@ -2458,6 +2482,7 @@ struct {
     message(httpUpdate.getLastErrorString().c_str(), 3000);
   }
 } updaterOTA;
+
 
 void setup() {
   ledcSetup(0, 0, 8);
@@ -2782,7 +2807,7 @@ void message(const char* mes, int dlay) {
   display.clearDisplay();
   display.setFont();
   display.setCursor(0, 0);
-  display.setTextSize(2);
+  display.setTextSize(1);
   display.print(utf8rus(mes));
   display.display();
   delay(dlay);
