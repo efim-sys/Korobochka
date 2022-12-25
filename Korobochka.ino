@@ -2092,7 +2092,9 @@ struct {
     }
     configTime(3600*3, 0, "pool.ntp.org");
     struct tm timeinfo;
-    getLocalTime(&timeinfo);
+    if(!getLocalTime(&timeinfo)){
+      message("Can't get time", 1000);
+    }
     WiFi.disconnect();
     while(true) {
       if(!getLocalTime(&timeinfo)){
