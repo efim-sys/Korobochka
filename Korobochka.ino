@@ -1664,8 +1664,19 @@ struct {
 
 struct {
   void play(){
-    BleKeyboard bleKeyboard("Korobochka BLE",  "efim.adior.ru", 99);
+    BleKeyboard bleKeyboard("Korobochka BLE",  "esys", 99);
     bleKeyboard.begin();
+
+    while(!bleKeyboard.isConnected()) message("not connected", 100);
+
+    Wire.begin();
+    Wire.beginTransmission(60);
+    byte cmode = 0x00;
+    byte command = 0xAE;
+    Wire.write(cmode);
+    Wire.write(command);
+    Wire.endTransmission();
+
     while(true){
       if(bleKeyboard.isConnected()) {
         if(!digitalRead(KEYLS)){
@@ -1678,7 +1689,7 @@ struct {
         }
         if(!digitalRead(KEYLC)){
           bleKeyboard.press(KEY_LEFT_CTRL);
-          bleKeyboard.press('C');
+          bleKeyboard.press(KEY_F4);
           delay(100);
           bleKeyboard.releaseAll();
           delay(100);
@@ -2109,7 +2120,7 @@ struct {
 
 
 void gameMenu() {
-  int numOfApps = 15;
+  int numOfApps = 16;
 
   int centerX = 64;
 
@@ -2214,6 +2225,12 @@ void gameMenu() {
     watch.play();
   };
   appList[14].logo = watch_logo;
+
+  appList[15].title = "Клавиатура";
+  appList[15].execute = []{
+    board.play();
+  };
+  appList[15].logo = std_logo;
 /*
   appList[15].title = "Тестирование";
   appList[15].execute = []{
