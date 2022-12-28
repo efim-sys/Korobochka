@@ -152,7 +152,7 @@ void winCats() {
   display.print(count);
   display.setCursor(8, 40);
   if (getHiScoreCats() < count){
-    display.print(utf8rus("Высокий счетчик!")); 
+    display.print(utf8rus("Высокий счетчик!"));
     EEPROM.write(0, count/256);
     EEPROM.write(1, count%256);
     EEPROM.end();
@@ -170,7 +170,7 @@ void winCats() {
   }
   display.drawRect(0, 0, 128, 64, 1);
   display.display();
-  
+
   wait();
 }
 
@@ -297,7 +297,7 @@ void playCats() {
   }
   delay(300);
   mapMenu();
-  delay(1000);
+  delay(100);
   timer = millis();
   kIncreaseTimer = millis();
   while (1) {
