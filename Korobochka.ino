@@ -2403,9 +2403,9 @@ struct {
 
 void update_started() {
   display.clearDisplay();
-  display.setTextSize(2);
-  display.setCursor(10, 10);
-  display.print("Download");
+  display.setTextSize(1);
+  display.setCursor(10, 5);
+  display.print("Updates download");
   display.drawRect(12, 40, 104, 10, 1);
   display.display();
 }
@@ -2500,6 +2500,7 @@ struct {
     Serial.print(asctime(&timeinfo));
   }
   //String server = "http://192.168.1.98:8000/Korobochka.ino.esp32c3.bin";
+  String server_repositories = "https://efim-sys.github.io/Korobochka/repositories";
   String server = "https://efim-sys.github.io/Korobochka/Korobochka.ino.esp32c3.bin";
   void update() {
     display.clearDisplay();
@@ -2532,6 +2533,33 @@ struct {
     wificlient.setCACert(rootCACertificate);
 
     wificlient.setTimeout(12000 / 1000);
+    HTTPClient https;
+    https.begin(server_repositories.c_str());
+    if(https.GET() > 0) {
+      String payload = https.getString();
+      int countVideos = payload.substring(0, payload.indexOf('\n')).toInt();
+      payload.remove(0, payload.indexOf('\n')+1);
+
+      struct {
+        String name;
+        String url;
+      } props[countVideos];
+
+      const char *vidMenu[countVideos];
+
+      for(int i = 0; i < countVideos; i++){
+        props[i].name = payload.substring(0, payload.indexOf('\n'));
+        vidMenu[i] = props[i].name.c_str();
+        payload.remove(0, payload.indexOf('\n')+1);
+        props[i].url = payload.substring(0, payload.indexOf('\n'));
+        payload.remove(0, payload.indexOf('\n')+1);
+      }
+
+      byte n = korobkaMenu(countVideos, vidMenu);
+      
+      server = props[n].url;
+    }
+    else message("Failed getting repositories. Trying official repository...", 3000);
 
     httpUpdate.update(wificlient, server.c_str());
     message(httpUpdate.getLastErrorString().c_str(), 3000);
