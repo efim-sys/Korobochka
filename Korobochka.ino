@@ -2521,9 +2521,9 @@ struct {
     display.clearDisplay();
     display.setCursor(10, 5);
     display.print("Updates download");
-    display.setCursor(5, 45);
-    display.print("IP: ");
-    display.print(IP);
+    display.setCursor(0, 45);
+    display.print("Update repositories");
+    //display.print(IP);
     display.display();
     httpUpdate.onStart(update_started);
     httpUpdate.onProgress(update_progress);
