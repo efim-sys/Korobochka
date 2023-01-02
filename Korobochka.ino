@@ -21,7 +21,7 @@
 #include <Fonts/Picopixel.h>
 #include "digital.h"
 #include <BleKeyboard.h>
-#include <ArduinoJson.h>
+//#include <ArduinoJson.h>
 #include <time.h>
 
 String ssid = "spynet-2.4g";
@@ -2504,8 +2504,8 @@ struct {
   void update() {
     display.clearDisplay();
     display.setTextSize(1);
-    display.setCursor(5, 5);
-    display.print("  Firmware upload!");
+    display.setCursor(10, 5);
+    display.print("Updates download");
     display.setCursor(5, 45);
     display.println("Connecting to ");
     display.print(utf8rus(ssid));
@@ -2518,8 +2518,8 @@ struct {
     IP = WiFi.localIP();
 
     display.clearDisplay();
-    display.setCursor(5, 5);
-    display.print("  Firmware upload!");
+    display.setCursor(10, 5);
+    display.print("Updates download");
     display.setCursor(5, 45);
     display.print("IP: ");
     display.print(IP);
