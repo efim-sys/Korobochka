@@ -1794,9 +1794,9 @@ struct {
     {(KeyProp) {"Sh", "Sh"},(KeyProp) {"\'", "\""},(KeyProp) {":", ";"},(KeyProp) {"\\", "|"},(KeyProp) {String(char(0x03)), "~"},(KeyProp) {"-", "_"},(KeyProp) {"+", "="},(KeyProp) {" ", " "},(KeyProp) {"/", "?"},(KeyProp) {String(char(0x0b)), String(char(0x0c))}}
   };
 
-  String play() {
+  String play(String def = "") {
     shift = false;
-    text = "";
+    text = def;
     while(true){
       updateScreen();
       delay(150);
@@ -2540,12 +2540,21 @@ struct {
       int countVideos = payload.substring(0, payload.indexOf('\n')).toInt();
       payload.remove(0, payload.indexOf('\n')+1);
 
+      File f = SPIFFS.open(F("/user_repo"), "rw");
+      String user_repo = f.readString();
+      f.close();
+
       struct {
         String name;
         String url;
-      } props[countVideos];
+      } props[countVideos + user_repo.length() > 1];
 
-      const char *vidMenu[countVideos];
+      const char *vidMenu[countVideos + user_repo.length() > 1];
+
+      if(user_repo.length() > 1) {
+        vidMenu[countVideos] = user_repo.length() > 18 ? user_repo.substring(0, 18).c_str() : user_repo.c_str();
+        props[countVideos].url = user_repo;
+      }
 
       for(int i = 0; i < countVideos; i++){
         props[i].name = payload.substring(0, payload.indexOf('\n'));
@@ -2555,7 +2564,7 @@ struct {
         payload.remove(0, payload.indexOf('\n')+1);
       }
 
-      byte n = korobkaMenu(countVideos, vidMenu);
+      byte n = korobkaMenu(countVideos + user_repo.length() > 1, vidMenu);
       
       server = props[n].url;
     }
@@ -2794,8 +2803,8 @@ void playSettings() {
       }
         break;
       case 3: {
-        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "WiFi подключение", "I2C scanner", "Осцилограф", "Генератор PWM"};
-        switch (korobkaMenu(6, tools)) {
+        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "WiFi подключение", "I2C scanner", "Осцилограф", "Генератор PWM", "Свой репозиторий"};
+        switch (korobkaMenu(7, tools)) {
           case 0:
             {thermo_type = 0;
             playThermometer();}
@@ -2870,6 +2879,15 @@ void playSettings() {
             case 5:
               {
               generator.play();}
+              break;
+            case 6:
+              {
+                SPIFFS.begin();
+                File f = SPIFFS.open(F("/user_repo"), "rw");
+                String a = korobkaKeyboard.play(f.readString());
+                f.print(a);
+                f.close();
+              }
               break;
           }
         }
