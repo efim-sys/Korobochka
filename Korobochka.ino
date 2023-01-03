@@ -2539,22 +2539,25 @@ struct {
       String payload = https.getString();
       int countVideos = payload.substring(0, payload.indexOf('\n')).toInt();
       payload.remove(0, payload.indexOf('\n')+1);
-      /*
+      
+      if(!SPIFFS.begin()) message("SPIFFS begin fault", 1000);
       File f = SPIFFS.open(F("/user_repo"), "r");
       String user_repo = f.readString();
       f.close();
-      */
+
+      bool has_user_repo = user_repo.length() > 1;
+      
       struct {
         String name;
         String url;
-      } props[countVideos];
+      } props[countVideos + has_user_repo];
 
-      const char *vidMenu[countVideos];
-/*
-      if(user_repo.length() > 1) {
+      const char *vidMenu[countVideos + has_user_repo];
+
+      if(has_user_repo) {
         vidMenu[countVideos] = user_repo.length() > 18 ? user_repo.substring(0, 18).c_str() : user_repo.c_str();
         props[countVideos].url = user_repo;
-      }*/
+      }
 
       for(int i = 0; i < countVideos; i++){
         props[i].name = payload.substring(0, payload.indexOf('\n'));
@@ -2564,7 +2567,7 @@ struct {
         payload.remove(0, payload.indexOf('\n')+1);
       }
 
-      byte n = korobkaMenu(countVideos, vidMenu);
+      byte n = korobkaMenu(countVideos + has_user_repo, vidMenu);
       
       server = props[n].url;
     }
@@ -2804,7 +2807,7 @@ void playSettings() {
         break;
       case 3: {
         const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "WiFi подключение", "I2C scanner", "Осцилограф", "Генератор PWM", "Свой репозиторий"};
-        switch (korobkaMenu(6, tools)) {
+        switch (korobkaMenu(7, tools)) {
           case 0:
             {thermo_type = 0;
             playThermometer();}
@@ -2882,11 +2885,16 @@ void playSettings() {
               break;
             case 6:
               {
-                SPIFFS.begin();
-                File f = SPIFFS.open(F("/user_repo"), "rw");
-                String a = korobkaKeyboard.play(f.readString());
-                f.print(a);
+                if(!SPIFFS.begin()) message("SPIFFS begin fault", 1000);
+                File f = SPIFFS.open(F("/user_repo"), "r");
+                if(!f) message("file open fault", 1000);
+                String e = f.readString();
                 f.close();
+                f = SPIFFS.open(F("/user_repo"), "w");
+                message(e.c_str(), 1000);
+                String a = korobkaKeyboard.play(e);
+                if(!f.print(a)) message("SPIFFS write fault", 1000);;
+                
               }
               break;
           }
