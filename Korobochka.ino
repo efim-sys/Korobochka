@@ -1826,7 +1826,7 @@ struct {
     drawBase();
     drawCursor();
     display.setCursor(0, 0);
-    display.print(text);
+    display.print((text.length() > 20) ? text.substring(text.length() - 20) : text);
     display.display();
   }
 
@@ -2555,7 +2555,7 @@ struct {
       const char *vidMenu[countVideos + has_user_repo];
 
       if(has_user_repo) {
-        vidMenu[countVideos] = user_repo.length() > 18 ? user_repo.substring(0, 18).c_str() : user_repo.c_str();
+        vidMenu[countVideos] = (user_repo.length() > 18) ? user_repo.substring(0, 18).c_str() : user_repo.c_str();
         props[countVideos].url = user_repo;
       }
 
@@ -2891,7 +2891,7 @@ void playSettings() {
                 String e = f.readString();
                 f.close();
                 f = SPIFFS.open(F("/user_repo"), "w");
-                message(e.c_str(), 1000);
+                
                 String a = korobkaKeyboard.play(e);
                 if(!f.print(a)) message("SPIFFS write fault", 1000);;
                 
