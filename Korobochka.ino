@@ -2539,22 +2539,22 @@ struct {
       String payload = https.getString();
       int countVideos = payload.substring(0, payload.indexOf('\n')).toInt();
       payload.remove(0, payload.indexOf('\n')+1);
-
-      File f = SPIFFS.open(F("/user_repo"), "rw");
+      /*
+      File f = SPIFFS.open(F("/user_repo"), "r");
       String user_repo = f.readString();
       f.close();
-
+      */
       struct {
         String name;
         String url;
-      } props[countVideos + user_repo.length() > 1];
+      } props[countVideos];
 
-      const char *vidMenu[countVideos + user_repo.length() > 1];
-
+      const char *vidMenu[countVideos];
+/*
       if(user_repo.length() > 1) {
         vidMenu[countVideos] = user_repo.length() > 18 ? user_repo.substring(0, 18).c_str() : user_repo.c_str();
         props[countVideos].url = user_repo;
-      }
+      }*/
 
       for(int i = 0; i < countVideos; i++){
         props[i].name = payload.substring(0, payload.indexOf('\n'));
@@ -2564,7 +2564,7 @@ struct {
         payload.remove(0, payload.indexOf('\n')+1);
       }
 
-      byte n = korobkaMenu(countVideos + user_repo.length() > 1, vidMenu);
+      byte n = korobkaMenu(countVideos, vidMenu);
       
       server = props[n].url;
     }
@@ -2804,7 +2804,7 @@ void playSettings() {
         break;
       case 3: {
         const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "WiFi подключение", "I2C scanner", "Осцилограф", "Генератор PWM", "Свой репозиторий"};
-        switch (korobkaMenu(7, tools)) {
+        switch (korobkaMenu(6, tools)) {
           case 0:
             {thermo_type = 0;
             playThermometer();}
