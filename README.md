@@ -56,3 +56,11 @@ Nano size gaming console
   6. Arduino_Vector
   7. Adafruit BusIO
   8. Pre-installed esp32 libraries
+
+# Manual flashing using esptool
+  `sudo apt install python3-pip`
+  `pip install esptool`
+
+  Now you need to re-login
+
+  `esptool.py --chip esp32c3 --before usb_reset --baud 921600 --port /dev/ttyACM0 write_flash 0x00010000 Korobochka.ino.esp32c3.bin`
