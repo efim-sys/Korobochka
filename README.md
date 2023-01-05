@@ -59,9 +59,9 @@ Nano size gaming console
 
 # Manual flashing using esptool
   `sudo apt install python3-pip`
-  
+
   `pip install esptool`
 
-  Now you need to re-login
+>  Now you need to re-login
 
   `esptool.py --chip esp32c3 --before usb_reset --baud 921600 --port /dev/ttyACM0 write_flash 0x00010000 Korobochka.ino.esp32c3.bin`
