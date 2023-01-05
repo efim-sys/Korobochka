@@ -59,6 +59,7 @@ Nano size gaming console
 
 # Manual flashing using esptool
   `sudo apt install python3-pip`
+  
   `pip install esptool`
 
   Now you need to re-login
