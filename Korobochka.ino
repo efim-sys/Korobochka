@@ -1525,7 +1525,7 @@ struct {
       data[0] = ds.read();
       data[1] = ds.read();  
 
-      message(String((float) (((data[1] << 8) | data[0]) >> 4) ).c_str(), 1);
+      message(String(((data[1] << 8) | data[0]) * 0.0625).c_str(), 1);
     }
   }
 } ds18b20;
