@@ -40,8 +40,8 @@ Nano size gaming console
   2. Copy all contents of libraries folder to library folder in your Arduino/libraies folder
   3. Open preferences and paste the link to "additional links":
 
-    `https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_dev_index.json`
-    
+    https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_dev_index.json
+
   4. Go instruments > board > board manager and search for esp32
   5. Install ESP32 core of newest version (It can take more than 5 mins)
   6. Go instruments > board and select ESP32C3 Dev Module
