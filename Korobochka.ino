@@ -1,5 +1,6 @@
 #define HW_CDC_ON_BOOT = TRUE
 
+#include <microDS18B20.h>
 #include<Adafruit_GFX.h>
 #include<Adafruit_SSD1306.h>
 #include <Adafruit_MLX90614.h>
@@ -1507,6 +1508,19 @@ void playGame() {
 
 struct {
   void play() {
+    MicroDS18B20<5> sensor;
+
+    while(1) {
+      sensor.requestTemp();
+      delay(1500);
+      if (sensor.readTemp()) message(String(sensor.getTemp()).c_str(), 100);
+      else message("error", 100);
+    }
+  }
+} ds18b20;
+
+struct {
+  void play() {
     KServo myservo(0);
     myservo.attach(6);
     int pos = 90;
@@ -1664,12 +1678,12 @@ struct {
 
 struct {
   void play(){
-    BleKeyboard bleKeyboard("Korobochka BLE",  "esys", 99);
+    BleKeyboard bleKeyboard("Korobochka BLE",  "esys", 99);           // Создаем bluetooth устройство
     bleKeyboard.begin();
 
-    while(!bleKeyboard.isConnected()) message("not connected", 100);
+    while(!bleKeyboard.isConnected()) message("not connected", 100);  // Ждем подключения к клавиатуре
 
-    Wire.begin();
+    Wire.begin();                                                     // Вводим дисплей в режим сна командой 0xAE
     Wire.beginTransmission(60);
     byte cmode = 0x00;
     byte command = 0xAE;
@@ -1677,97 +1691,96 @@ struct {
     Wire.write(command);
     Wire.endTransmission();
 
-    while(true){
+    while(true){                                                      // Будем постоянно проверять нажатие кнопок
       if(bleKeyboard.isConnected()) {
         if(!digitalRead(KEYLS)){
-          bleKeyboard.write(KEY_MEDIA_VOLUME_DOWN);
+          bleKeyboard.write(KEY_MEDIA_VOLUME_DOWN);                   // Отправляем код клавиши понижения громкости
           delay(200);
         }
         if(!digitalRead(KEYRC)){
-          bleKeyboard.write(KEY_MEDIA_VOLUME_UP);
+          bleKeyboard.write(KEY_MEDIA_VOLUME_UP);                     // Отправляем код клавиши повышения громкости
           delay(200);
         }
         if(!digitalRead(KEYLC)){
-          bleKeyboard.press(KEY_LEFT_CTRL);
-          bleKeyboard.press(KEY_F4);
-          delay(100);
-          bleKeyboard.releaseAll();
-          delay(100);
+          bleKeyboard.write(KEY_RIGHT_ARROW);                         // Отправляем код стрелки вправо
+          delay(200);
         }
         if(!digitalRead(KEYRS)){
-          bleKeyboard.write(KEY_MEDIA_PLAY_PAUSE);
+          bleKeyboard.write(KEY_MEDIA_PLAY_PAUSE);                    // Отправляем код клавиши паузы
           delay(200);
         }
       }
+      delay(20);                                                      // Задержка не обязательна, но за 20 мс ничего не изменится
     }
   }
-
 } board;
 
 struct {
   String serverURL = "https://efim-sys.github.io/korobkaTube/";
-  void play() {
-    unsigned char frame[1024];
-    message("arr ok", 300);
-    WiFi.begin(ssid.c_str(), password.c_str());
-    message("connecting to WiFi", 100);
-    display.clearDisplay();
-    while(WiFi.status() != WL_CONNECTED) {
-      delay(200);
-    }
-    message("get videos", 1);
-    HTTPClient http;
-    http.begin(serverURL.c_str());
-    http.GET();
-    String payload = http.getString();
-    int countVideos = payload.substring(0, payload.indexOf('\n')).toInt();
-    payload.remove(0, payload.indexOf('\n')+1);
-    struct {
-      String name;
-      String url;
-      int samples;
-    } props[countVideos];
-    const char *vidMenu[countVideos];
+    void play() {
+      unsigned char frame[1024];                                   // Создание буфера в 1 Кб на 10 кадров
+      message("arr ok", 300);
+      WiFi.begin(ssid.c_str(), password.c_str());                  // Подключение к WiFi
+      message("connecting to WiFi", 100);
+      display.clearDisplay();
+      while(WiFi.status() != WL_CONNECTED) {                       // Ждать, пока WiFi не подключился
+        delay(200);
+      }
+      message("get videos", 1);
+      HTTPClient http;                                             // Создание Http клиента
+      http.begin(serverURL.c_str());                               // Указываем адрес сервера с листингом видео
+      http.GET();                                                  // Производим Get-запрос
+      String payload = http.getString();
+      int countVideos = payload.substring(0, payload.indexOf('\n')).toInt();  // На первой строке листинга кол-во видео
+      payload.remove(0, payload.indexOf('\n')+1);
+      
+      struct {
+        String name;
+        String url;
+        int samples;
+      } props[countVideos];                                        // Структура с информацией о видеоролике
 
-    for(int i = 0; i < countVideos; i++){
-      props[i].name = payload.substring(0, payload.indexOf('\n'));
-      vidMenu[i] = props[i].name.c_str();
-      payload.remove(0, payload.indexOf('\n')+1);
-      props[i].url = payload.substring(0, payload.indexOf('\n'));
-      payload.remove(0, payload.indexOf('\n')+1);
-      props[i].samples = payload.substring(0, payload.indexOf('\n')).toInt();
-      payload.remove(0, payload.indexOf('\n')+1);
-    }
-    while(true){
-    byte n = korobkaMenu(countVideos, vidMenu);
-    int samples = props[n].samples;
-    const char* vidUrl = props[n].url.c_str();
-    for(int f = 0; f < samples; f++){
+      const char *vidMenu[countVideos];                            // Массив для функции меню
 
-      String path = serverURL + String(vidUrl) + "/" + String(f) + ".ktube";
-      http.begin(path.c_str());
-      http.GET();
-      payload = http.getString();
-      for(int j = 0; j < 10; j++) {
-        for(int i = 0; i < 1024; i++) {
-          frame[i] = payload[i+j*1024];
-        }
-        display.clearDisplay();
-        display.drawBitmap(0, 0, frame, 128, 64, 1);
-        display.display();
-        if(!digitalRead(KEYRS)) {
-          display.setCursor(0, 0);
-          display.print("Pause");
-          display.display();
-          delay(200);
-          while(digitalRead(KEYRS)) delay(50);
-          delay(200);
+      for(int i = 0; i < countVideos; i++){                        // Парсинг информаций о видео
+        props[i].name = payload.substring(0, payload.indexOf('\n'));
+        vidMenu[i] = props[i].name.c_str();
+        payload.remove(0, payload.indexOf('\n')+1);
+        props[i].url = payload.substring(0, payload.indexOf('\n'));
+        payload.remove(0, payload.indexOf('\n')+1);
+        props[i].samples = payload.substring(0, payload.indexOf('\n')).toInt();
+        payload.remove(0, payload.indexOf('\n')+1);
+      }
+      
+      while(true){
+        byte n = korobkaMenu(countVideos, vidMenu);              // Выбор видео через меню 
+        int samples = props[n].samples;                          // Кол-во фрагментов по 10 кадров
+        const char* vidUrl = props[n].url.c_str();
+        for(int f = 0; f < samples; f++){
+
+          String path = serverURL + String(vidUrl) + "/" + String(f) + ".ktube";  // Адрес нужного фрагмента
+          http.begin(path.c_str());
+          http.GET();
+          payload = http.getString();
+          for(int j = 0; j < 10; j++) {
+            for(int i = 0; i < 1024; i++) {
+              frame[i] = payload[i+j*1024];                      // Пишем 1 кадр в память
+            }
+            display.clearDisplay();
+            display.drawBitmap(0, 0, frame, 128, 64, 1);         // Выводим кадр на дисплей
+            display.display();
+            if(!digitalRead(KEYRS)) {                            // Функция паузы
+              display.setCursor(0, 0);
+              display.print("Pause");
+              display.display();
+              delay(200);
+              while(digitalRead(KEYRS)) delay(50);
+              delay(200);
+            }
+          }
         }
       }
     }
-
-  }
-}
 } korobkaTube;
 
 struct KeyProp {
@@ -2806,8 +2819,8 @@ void playSettings() {
       }
         break;
       case 3: {
-        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "WiFi подключение", "I2C scanner", "Осцилограф", "Генератор PWM", "Свой репозиторий"};
-        switch (korobkaMenu(7, tools)) {
+        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "WiFi подключение", "I2C scanner", "Осцилограф", "Генератор PWM", "Свой репозиторий", "ds18b20 t-meter"};
+        switch (korobkaMenu(8, tools)) {
           case 0:
             {thermo_type = 0;
             playThermometer();}
@@ -2896,6 +2909,9 @@ void playSettings() {
                 if(!f.print(a)) message("SPIFFS write fault", 1000);;
                 
               }
+              break;
+            case 7:
+              ds18b20.play();
               break;
           }
         }
