@@ -1,6 +1,6 @@
 #define HW_CDC_ON_BOOT = TRUE
 
-#include <microDS18B20.h>
+#include <OneWire.h>
 #include<Adafruit_GFX.h>
 #include<Adafruit_SSD1306.h>
 #include <Adafruit_MLX90614.h>
@@ -1508,13 +1508,24 @@ void playGame() {
 
 struct {
   void play() {
-    MicroDS18B20<5> sensor;
+    OneWire ds(5);
+    byte data[2];
 
     while(1) {
-      sensor.requestTemp();
-      delay(1500);
-      if (sensor.readTemp()) message(String(sensor.getTemp()).c_str(), 100);
-      else message("error", 100);
+      ds.reset();
+      ds.write(0xCC); 
+      ds.write(0x44);
+
+      delay(1000);
+
+      ds.reset();
+      ds.write(0xCC); 
+      ds.write(0xBE);
+
+      data[0] = ds.read();
+      data[1] = ds.read();  
+
+      message(String((float) (((data[1] << 8) | data[0]) >> 4) ).c_str(), 1);
     }
   }
 } ds18b20;
