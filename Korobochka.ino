@@ -1870,6 +1870,34 @@ struct {
 
 } korobkaKeyboard;
 
+struct {
+  void play() {
+    String word, url;
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid.c_str(), password.c_str());
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(100);
+    }
+    HTTPClient http;
+    while(true) {
+      word = korobkaKeyboard.play(word);
+      message("Getting description\nfrom wikipedia...", 1);
+      url = "https://api.wikimedia.org/core/v1/wikipedia/en/page/" + word + "/description";
+      http.begin(url);
+      int httpCode = http.GET();
+
+      if(httpCode = HTTP_CODE_OK) {
+        message(http.getString().c_str(), 200);
+        while(digitalRead(KEYRS));
+        delay(200);
+      }
+      else {
+        message(http.errorToString(httpCode).c_str(), 1500);
+      }
+    }
+  }
+} wikipedia;
+
 void gamMenu() {
   int btn0 = !BTN;
   int btn2 = !BTN;
@@ -2144,7 +2172,7 @@ struct {
 
 
 void gameMenu() {
-  int numOfApps = 16;
+  int numOfApps = 17;
 
   int centerX = 64;
 
@@ -2255,6 +2283,12 @@ void gameMenu() {
     board.play();
   };
   appList[15].logo = std_logo;
+
+  appList[16].title = "Wikipedia";
+  appList[16].execute = []{
+    wikipedia.play();
+  };
+  appList[16].logo = std_logo;
 /*
   appList[15].title = "Тестирование";
   appList[15].execute = []{
