@@ -1,6 +1,13 @@
 #define HW_CDC_ON_BOOT = TRUE
 
+/* This file contains my rapid API key, which is used in search app*/
 #include <rapidapi.h>
+/* Please get your own key here https://rapidapi.com/duckduckgo/api/duckduckgo-zero-click-info/ */
+/* Create rapidapi folder in your arduino libraries folder*/
+/* And then copy there rapidapi.h file with your code*/
+
+/* .... Or remove this include and the search app from the code*/
+
 #include <OneWire.h>
 #include<Adafruit_GFX.h>
 #include<Adafruit_SSD1306.h>

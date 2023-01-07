@@ -1,0 +1,1 @@
+const char rapidAPIKey [] = "Your Key Is Here";
