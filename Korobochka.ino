@@ -2928,7 +2928,7 @@ void playSettings() {
         display.println(WiFi.macAddress());
         display.println("Build datetime: ");
         display.println(String(__DATE__) + " " + String(__TIME__));        
-        display.print((100 * SPIFFS.usedBytes()) / SPIFFS.totalBytes());
+        display.print((100.0 * SPIFFS.usedBytes()) / SPIFFS.totalBytes());
         display.println(" \% of FS used");
         display.display();
         delay(200);
