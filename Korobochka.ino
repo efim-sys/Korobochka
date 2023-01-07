@@ -2927,9 +2927,13 @@ void playSettings() {
         WiFi.mode(WIFI_MODE_STA);
         display.println(WiFi.macAddress());
         display.println("Build datetime: ");
-        display.println(String(__DATE__) + " " + String(__TIME__));
+        display.println(String(__DATE__) + " " + String(__TIME__));        
+        display.print((100 * SPIFFS.usedBytes()) / SPIFFS.totalBytes());
+        display.println(" \% of FS used");
         display.display();
-        while(1);
+        delay(200);
+        while(digitalRead(KEYRS)) delay(50);
+        delay(200);
       }
         break;
       case 3: {
