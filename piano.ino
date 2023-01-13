@@ -46,7 +46,7 @@ void playPiano() {
     display.display();
   }
 }
-
+/*/
 void nokia() {
     ledcWriteTone(0, 659);
     delay(113.63625);
@@ -77,3 +77,4 @@ void nokia() {
 
 
 }
+*/

@@ -28,6 +28,7 @@
 #include <HTTPClient.h>
 #include <HTTPUpdate.h>
 #include <Fonts/Picopixel.h>
+#include <Fonts/FreeSans9pt7b.h>
 #include "digital.h"
 #include <BleKeyboard.h>
 //#include <ArduinoJson.h>
@@ -1118,7 +1119,7 @@ const unsigned char search_logo [] PROGMEM = {
 
 const unsigned char *cow[8] PROGMEM = {mycow1, mycow2, mycow3, mycow4, mycow5, mycow6, mycow7, mycow8};
 
-const char *settings[] = {"music", "cat or bread delay", "About device", "Tools", "Обновления"};
+const char *settings[] = {"music", "cat or bread delay", "WiFi подключение", "Об устройстве", "Инструменты", "Обновления"};
 const char *keys[] = {"KEY1", "KEY2", "KEY3", "KEY4"};
 const char *note_names[] = {"ДО", "РЕ", "МИ", "ФА", "СОЛЬ", "ЛЯ", "СИ", "ДО2"};
 const int notes[] = {261, 293, 329, 349, 392, 440, 493, 526};
@@ -1956,7 +1957,11 @@ struct {
       int httpCode = http.GET();
 
       if(httpCode = HTTP_CODE_OK) {
-        message(http.getString().substring(13).substring(0, 168).c_str(), 200);
+        word.toLowerCase();
+        message(
+          (word.indexOf("taiwan") != -1) ? 
+            "taiwan ia an island, that is part of Great China!" :
+            http.getString().substring(13).substring(0, 168).c_str(), 200);
         while(digitalRead(KEYRS));
         delay(200);
       }
@@ -1967,6 +1972,59 @@ struct {
   }
 } search;
 
+struct {
+  int a = 4;
+  int a2 = 16;
+
+  int area[4][4];
+
+  void play() {
+    clearArea();
+    while(generateNew()) {
+      show();
+      delay(1000);
+    }
+  }
+
+  void clearArea() {
+    for(int i = 0; i < a2; i ++) {
+      area[i%a][i/a] = 0; 
+    }
+  }
+
+  bool generateNew() {
+    int empty = 0;
+    for(int i = 0; i < a2; i ++) {
+      if(area[i%a][i/a] == 0) empty ++; 
+    }
+    if(empty == 0) return false;
+    int n = random(1, empty+1);
+
+    empty = 0;
+
+    for(int i = 0; i < a2; i ++) {
+      if(area[i%a][i/a] == 0) empty ++; 
+      if(empty == n) area[i%a][i/a] = 2;
+    }
+    return true;
+  }
+
+  void show() {
+    display.setTextSize(1);
+    display.clearDisplay();
+    
+    display.setFont(&FreeSans9pt7b);
+    for(int x = 0; x < a; x++){
+      for(int y = 0; y < a; y++) {
+        display.setCursor(32 + y*a2, x*a2 + a2 - 3);
+        display.print(area[x][y]);
+      }
+    }
+    display.display();
+  }
+} game2048;
+
+/*
 void gamMenu() {
   int btn0 = !BTN;
   int btn2 = !BTN;
@@ -2179,6 +2237,8 @@ void gamMenu() {
 
 }
 
+*/
+
 struct APP {
   String title;
   void (*execute)();
@@ -2241,7 +2301,7 @@ struct {
 
 
 void gameMenu() {
-  int numOfApps = 17;
+  int numOfApps = 18;
 
   int centerX = 64;
 
@@ -2280,6 +2340,7 @@ void gameMenu() {
     display.clearDisplay();
     display.drawBitmap(0, 0, putina_portret_vtoroy, 128, 64, 1);
     display.display();
+    ESP.deepSleep(0);
   };
   appList[5].logo = std_logo;
 
@@ -2358,6 +2419,12 @@ void gameMenu() {
     search.play();
   };
   appList[16].logo = search_logo;
+
+  appList[17].title = "2048";
+  appList[17].execute = []{
+    game2048.play();
+  };
+  appList[17].logo = std_logo;
 /*
   appList[15].title = "Тестирование";
   appList[15].execute = []{
@@ -2907,7 +2974,7 @@ struct {
 
 void playSettings() {
   while (1) {
-    switch (korobkaMenu(5, settings)) {
+    switch (korobkaMenu(6, settings)) {
       case 0:
           {byte key = korobkaMenu(4, keys);
           int freq = notes[korobkaMenu(8, note_names)];
@@ -2920,7 +2987,7 @@ void playSettings() {
           message("Saved!", 400);}
           break;
 
-      case 2: {
+      case 3: {
         display.clearDisplay();
         display.setCursor(0, 0);
         display.setTextSize(1);
@@ -2936,28 +3003,7 @@ void playSettings() {
         delay(200);
       }
         break;
-      case 3: {
-        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "WiFi подключение", "I2C scanner", "Осцилограф", "Генератор PWM", "Свой репозиторий", "ds18b20 t-meter"};
-        switch (korobkaMenu(8, tools)) {
-          case 0:
-            {thermo_type = 0;
-            playThermometer();}
-            break;
-          case 1:
-            {if (korobkaInput(0, 1000, 10, 500) == ROM_PASSWD) {
-              message("pass OK!", 400);
-              message("ROM addr:", 400);
-              int addr = korobkaInput(0, 256, 1, 0);
-              message("Data:", 400);
-              EEPROM.write(addr, korobkaInput(0, 256, 1, EEPROM.read(addr)));
-              EEPROM.commit();
-              message("Saved!", 400);
-            }
-            else {
-              message("wrong pass", 400);
-            }}
-            break;
-          case 2:
+      case 2:
             {
             message("Поиск", 1);
             int n = WiFi.scanNetworks();
@@ -2982,7 +3028,29 @@ void playSettings() {
             delay(100);
             ESP.restart();}
             break;
-          case 3:
+      case 4: {
+        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "I2C scanner", "Осцилограф", "Генератор PWM", "Свой репозиторий", "ds18b20 t-meter"};
+        switch (korobkaMenu(7, tools)) {
+          case 0:
+            {thermo_type = 0;
+            playThermometer();}
+            break;
+          case 1:
+            {if (korobkaInput(0, 1000, 10, 500) == ROM_PASSWD) {
+              message("pass OK!", 400);
+              message("ROM addr:", 400);
+              int addr = korobkaInput(0, 256, 1, 0);
+              message("Data:", 400);
+              EEPROM.write(addr, korobkaInput(0, 256, 1, EEPROM.read(addr)));
+              EEPROM.commit();
+              message("Saved!", 400);
+            }
+            else {
+              message("wrong pass", 400);
+            }}
+            break;
+          
+          case 2:
             {Wire.begin();
             display.clearDisplay();
             display.setCursor(0, 0);
@@ -2994,7 +3062,7 @@ void playSettings() {
             display.display();
             while(1);}
             break;
-          case 4:
+          case 3:
             {
             display.clearDisplay();
             display.setTextSize(1);
@@ -3010,11 +3078,11 @@ void playSettings() {
               if(digitalRead(KEYLS)) gSpeed--;
             };}
             break;
-            case 5:
+            case 4:
               {
               generator.play();}
               break;
-            case 6:
+            case 5:
               {
                 if(!SPIFFS.begin()) message("SPIFFS begin fault", 1000);
                 File f = SPIFFS.open(F("/user_repo"), "r");
@@ -3028,13 +3096,13 @@ void playSettings() {
                 
               }
               break;
-            case 7:
+            case 6:
               ds18b20.play();
               break;
           }
         }
           break;
-        case 4:
+        case 5:
         {
           updaterOTA.update();
         }
