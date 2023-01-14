@@ -2925,9 +2925,9 @@ void loop() {
 
 }
 
+/*
 
-
-byte korobkaMenu(byte lenght, const char *elements[]) {
+byte korobkaMenuChar(byte lenght, const char *elements[]) {
   display.setFont();
   int mapnum = 0;
   while (1) {
@@ -2957,21 +2957,28 @@ byte korobkaMenu(byte lenght, const char *elements[]) {
   delay(200);
   return mapnum;
 }
+*/
 
-byte korobkaMenuString(byte lenght, String elements[]) {
+byte korobkaMenu(byte length, const char* elements[]) {
   display.setFont();
   int mapnum = 0;
+
+  int pages = ceil(length / 8.0);
+
+  int page = 0;
+
   while (1) {
     display.clearDisplay();
     display.setTextSize(1);
     display.setCursor(0, 0);
-    for (byte i = 0; i < lenght; i++) {
+    for (int i = page * 8; i < length; i++) {
 
       display.print("  ");
       display.println(utf8rus(elements[i]));
     }
-    display.setCursor(0, 8 * mapnum);
+    display.setCursor(0, 8 * (mapnum - page * 8));
     display.print(">");
+    display.drawFastVLine(127, (64/pages) * page, 64/pages, 1);
     display.display();
     bool up = !BTN;
     bool down = !BTN;
@@ -2981,8 +2988,48 @@ byte korobkaMenuString(byte lenght, String elements[]) {
       down = digitalRead(KEYRC);
       enter = digitalRead(KEYRS);
     }
-    if (up == BTN) mapnum--; if (mapnum < 0) mapnum = lenght - 1; delay(100);
-    if (down == BTN) mapnum++; if (mapnum > lenght - 1) mapnum = 0; delay(100);
+    if (up == BTN) mapnum--; if (mapnum < 0) mapnum = length - 1; delay(100);
+    if (down == BTN) mapnum++; if (mapnum > length - 1) mapnum = 0; delay(100);
+    if (mapnum / 8 != page) page = mapnum / 8;
+    if (enter  == BTN) break;
+  }
+  delay(200);
+  return mapnum;
+}
+
+
+byte korobkaMenuString(byte length, String elements[]) {
+  display.setFont();
+  int mapnum = 0;
+
+  int pages = ceil(length / 8.0);
+
+  int page = 0;
+
+  while (1) {
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    for (int i = page * 8; i < length; i++) {
+
+      display.print("  ");
+      display.println(utf8rus(elements[i]));
+    }
+    display.setCursor(0, 8 * (mapnum - page * 8));
+    display.print(">");
+    display.drawFastVLine(127, (64/pages) * page, 64/pages, 1);
+    display.display();
+    bool up = !BTN;
+    bool down = !BTN;
+    bool enter = !BTN;
+    while (up == !BTN and down == !BTN and enter == !BTN) {
+      up = digitalRead(KEYLS);
+      down = digitalRead(KEYRC);
+      enter = digitalRead(KEYRS);
+    }
+    if (up == BTN) mapnum--; if (mapnum < 0) mapnum = length - 1; delay(100);
+    if (down == BTN) mapnum++; if (mapnum > length - 1) mapnum = 0; delay(100);
+    if (mapnum / 8 != page) page = mapnum / 8;
     if (enter  == BTN) break;
   }
   delay(200);
@@ -3117,7 +3164,7 @@ void playSettings() {
             display.clearDisplay();
             display.setCursor(0, 0);
             display.setTextSize(1);
-            if(n > 8) n = 8;
+            //if(n > 8) n = 8;
             String nets[n];
             for (int i = 0; i < n; ++i) {
               nets[i] = WiFi.SSID(i);
