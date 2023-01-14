@@ -1980,9 +1980,29 @@ struct {
 
   void play() {
     clearArea();
-    while(generateNew()) {
+    generateNew();
+    generateNew();
+    show();
+
+    int dx = 0;
+    int dy = 0;
+
+    while(true) {
+      dx = 0;
+      dy = 0;
+
+      while(dx == 0 and dy == 0) {
+        if(!digitalRead(KEYLS)) dx = -1;
+        else if(!digitalRead(KEYLC)) dy = -1;
+        else if(!digitalRead(KEYRC)) dy = 1;
+        else if(!digitalRead(KEYRS)) dx = 1;
+        delay(30);
+      }
+
+      move(dx, dy);
+      generateNew();
       show();
-      delay(1000);
+      delay(200);
     }
   }
 
@@ -2009,15 +2029,102 @@ struct {
     return true;
   }
 
+  bool move(int dx, int dy) {
+    int newArea[4][4];
+    for(int i = 0; i < a2; i ++) {
+      newArea[i%a][i/a] = area[i%a][i/a]; 
+    }
+
+    bool total = false;
+
+    bool change = true;
+
+    while(change) {
+      change = false;
+      for(int x = 0; x < a; x++){
+        for(int y = 0; y < a; y++) {
+          if(area[x][y] != 0 and x+dx < a and x+dx >= 0 and y+dy < a and y+dy >= 0) {
+            if(area[x+dx][y+dy] == 0) {
+              newArea[x+dx][y+dy] = newArea[x][y];
+              newArea[x][y] = 0;
+              change = true;
+              total = true;
+              for(int i = 0; i < a2; i ++) {
+                area[i%a][i/a] = newArea[i%a][i/a]; 
+              }
+            }
+          }
+        }
+      }
+    }
+
+    change = true;
+    
+
+    while(change) {
+      change = false;
+      for(int x = 0; x < a; x++){
+        for(int y = 0; y < a; y++) {
+          if(area[x][y] != 0 and x+dx < a and x+dx >= 0 and y+dy < a and y+dy >= 0) {
+            if(area[x][y] == area[x+dx][y+dy]) {
+              newArea[x+dx][y+dy] = newArea[x][y]*2;
+              newArea[x][y] = 0;
+              change = true;
+              total = true;
+              for(int i = 0; i < a2; i ++) {
+                area[i%a][i/a] = newArea[i%a][i/a]; 
+              }
+            }
+          }
+        }
+      }
+    }
+
+    change = true;
+
+    while(change) {
+      change = false;
+      for(int x = 0; x < a; x++){
+        for(int y = 0; y < a; y++) {
+          if(area[x][y] != 0 and x+dx < a and x+dx >= 0 and y+dy < a and y+dy >= 0) {
+            if(area[x+dx][y+dy] == 0) {
+              newArea[x+dx][y+dy] = newArea[x][y];
+              newArea[x][y] = 0;
+              change = true;
+              total = true;
+              for(int i = 0; i < a2; i ++) {
+                area[i%a][i/a] = newArea[i%a][i/a]; 
+              }
+            }
+          }
+        }
+      }
+      for(int i = 0; i < a2; i ++) {
+        area[i%a][i/a] = newArea[i%a][i/a]; 
+      }
+
+      
+    }
+
+    for(int i = 0; i < a2; i ++) {
+      area[i%a][i/a] = newArea[i%a][i/a]; 
+    }
+
+    return total;
+    
+  }
   void show() {
     display.setTextSize(1);
     display.clearDisplay();
     
-    display.setFont(&FreeSans9pt7b);
+    //display.setFont(&FreeSans9pt7b);
     for(int x = 0; x < a; x++){
       for(int y = 0; y < a; y++) {
-        display.setCursor(32 + y*a2, x*a2 + a2 - 3);
-        display.print(area[x][y]);
+        if(area[x][y]) {
+          display.setCursor(42 + y*a2 - (floor(log10(abs(area[x][y])))+1)*3 , x*a2+a);
+          display.print(area[x][y]);
+        }
+        display.drawRect(34 + y*a2, x*a2, a2, a2, 1);
       }
     }
     display.display();
