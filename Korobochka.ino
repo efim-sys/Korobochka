@@ -1257,6 +1257,30 @@ bool thermo_type = 1;
 
 WebServer gameServer(80);
 
+
+struct {
+  void connectWiFi(String SSID = ssid, String PASSWORD = password) {
+    WiFi.begin(SSID.c_str(), PASSWORD.c_str());
+    display.clearDisplay();
+    display.setCursor(28, 0);
+    display.print("Connecting to");
+    display.setCursor(64 - SSID.length() * 3, 8);
+    display.print(SSID);
+    int pos = 32;
+    int e = 8;
+    while(WiFi.status() != WL_CONNECTED) {
+      display.fillRect(32, 40, 64, 10, 0);
+      display.drawRoundRect(32, 40, 64, 10, 5, 1);
+      display.fillRoundRect(pos, 40, 16, 10, 5, 1);
+      display.display();
+      pos+=e;
+      if(pos >= 80 or pos <= 32) e *= -1;
+      delay(100);
+    }
+  }
+} KorobkaOS;
+
+
 class KServo {
 public:
   KServo(int ledcChannel) {
@@ -1499,13 +1523,8 @@ class Pong {
         }
       }
       String roomName = WiFi.SSID(room);
-      WiFi.mode(WIFI_STA);
-      WiFi.begin(roomName.c_str(), gamePass.c_str());
-      message("connecting", 500);
-      while (WiFi.status() != WL_CONNECTED) {
-        Serial.print('.');
-        delay(200);
-      }
+      
+      KorobkaOS.connectWiFi(roomName, gamePass);
       display.clearDisplay();
       display.setCursor(0, 0);
       display.setTextSize(1);
@@ -1769,14 +1788,8 @@ struct {
   String serverURL = "https://efim-sys.github.io/korobkaTube/";
     void play() {
       unsigned char frame[1024];                                   // Создание буфера в 1 Кб на 10 кадров
-      message("arr ok", 300);
-      WiFi.begin(ssid.c_str(), password.c_str());                  // Подключение к WiFi
-      message("connecting to WiFi", 100);
-      display.clearDisplay();
-      while(WiFi.status() != WL_CONNECTED) {                       // Ждать, пока WiFi не подключился
-        delay(200);
-      }
-      message("get videos", 1);
+      KorobkaOS.connectWiFi();
+      message("get videos", 1000);
       HTTPClient http;                                             // Создание Http клиента
       http.begin(serverURL.c_str());                               // Указываем адрес сервера с листингом видео
       http.GET();                                                  // Производим Get-запрос
@@ -1912,11 +1925,7 @@ struct {
 struct {
   void play() {
     String word, url;
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid.c_str(), password.c_str());
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(100);
-    }
+    KorobkaOS.connectWiFi();
     HTTPClient http;
     while(true) {
       word = korobkaKeyboard.play(word);
@@ -1941,11 +1950,7 @@ struct {
 struct {
   void play() {
     String word, url;
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid.c_str(), password.c_str());
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(100);
-    }
+    KorobkaOS.connectWiFi();
     HTTPClient http;
     while(true) {
       word = korobkaKeyboard.play(word);
@@ -2383,12 +2388,7 @@ void testPlay() {
 
 struct {
   void play() {
-    message("Connecting to WiFi...", 1);
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid.c_str(), password.c_str());
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(100);
-    }
+    KorobkaOS.connectWiFi();
     configTime(3600*3, 0, "pool.ntp.org");
     struct tm timeinfo;
     if(!getLocalTime(&timeinfo)){
@@ -2642,18 +2642,7 @@ IPAddress IP;
 
 struct {
   void update() {
-    display.setTextSize(1);
-    display.setCursor(5, 5);
-    display.print("  Firmware upload!");
-    display.setCursor(5, 45);
-    display.println("Connecting to ");
-    display.print(ssid);
-    display.display();
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid.c_str(), password.c_str());
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(100);
-    }
+    KorobkaOS.connectWiFi();
     IP = WiFi.localIP();
 
     ArduinoOTA
@@ -2804,19 +2793,7 @@ struct {
   String server_repositories = "https://efim-sys.github.io/Korobochka/repositories";
   String server = "https://efim-sys.github.io/Korobochka/Korobochka.ino.esp32c3.bin";
   void update() {
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setCursor(10, 5);
-    display.print("Updates download");
-    display.setCursor(5, 45);
-    display.println("Connecting to ");
-    display.print(utf8rus(ssid));
-    display.display();
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid.c_str(), password.c_str());
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(100);
-    }
+    KorobkaOS.connectWiFi();
     IP = WiFi.localIP();
 
     display.clearDisplay();
@@ -2978,7 +2955,7 @@ byte korobkaMenu(byte length, const char* elements[]) {
     }
     display.setCursor(0, 8 * (mapnum - page * 8));
     display.print(">");
-    display.drawFastVLine(127, (64/pages) * page, 64/pages, 1);
+    if(pages - 1) display.drawFastVLine(127, (64/pages) * page, 64/pages, 1);
     display.display();
     bool up = !BTN;
     bool down = !BTN;
@@ -3010,14 +2987,15 @@ byte korobkaMenuString(byte length, String elements[]) {
     display.clearDisplay();
     display.setTextSize(1);
     display.setCursor(0, 0);
+    String e;
     for (int i = page * 8; i < length; i++) {
-
+      e = String(elements[i]);
       display.print("  ");
-      display.println(utf8rus(elements[i]));
+      display.println(utf8rus((e.length() > 18) ? e.substring(0, 18).c_str() : e.c_str()));
     }
     display.setCursor(0, 8 * (mapnum - page * 8));
     display.print(">");
-    display.drawFastVLine(127, (64/pages) * page, 64/pages, 1);
+    if(pages-1) display.drawFastVLine(127, (64/pages) * page, 64/pages, 1);
     display.display();
     bool up = !BTN;
     bool down = !BTN;
