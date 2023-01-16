@@ -1260,9 +1260,11 @@ WebServer gameServer(80);
 
 struct {
   void connectWiFi(String SSID = ssid, String PASSWORD = password) {
+    WiFi.mode(WIFI_STA);
     WiFi.begin(SSID.c_str(), PASSWORD.c_str());
     display.clearDisplay();
     display.setCursor(28, 0);
+    display.setTextSize(1);
     display.print("Connecting to");
     display.setCursor(64 - SSID.length() * 3, 8);
     display.print(SSID);
@@ -1289,7 +1291,7 @@ public:
   }
   void attach(int gpio) {
     _gpio = gpio;
-    ledcAttachPin(_gpio, 0);
+    ledcAttachPin(_gpio, _ledcChannel);
   }
   void write(int angle) {
     _duty = map(angle, 0, 180, 80, 510);
@@ -2387,6 +2389,80 @@ void testPlay() {
 }
 
 struct {
+  String ssid = "Korobka-Katafalk";
+  String password = "ftotheded";
+
+  int lastPower [5] = {0, 0, 0, 0, 0};
+
+  int ledChannel = 0;
+
+  KServo servo = KServo(4);
+
+  void playController() {
+    KorobkaOS.connectWiFi(ssid, password);
+    long int sendTimer = millis();
+    int joyX = 0;
+    int joyY = 0;
+    HTTPClient http;
+    while(1){
+      joyX = (-255 * !digitalRead(KEYLS)) + (255 * !digitalRead(KEYRS));
+      joyY = (-255 * !digitalRead(KEYLC)) + (255 * !digitalRead(KEYRC));
+      if(sendTimer < (millis() - 50)){        
+        String serverPath = String("http://192.168.4.1/data") + String("?x=") + String(joyX) + String("&y=") + String(joyY);
+        http.begin(serverPath.c_str());
+        http.GET();
+        sendTimer = millis();
+      }
+    }
+  }
+
+  void controlMotor(int power) {
+    digitalWrite(7, power < 0);
+    ledcWrite(ledChannel, (power < 0) ? (255 + power) : power);
+  }
+
+  void initMotor() {
+    ledcSetup(ledChannel, 3000, 8);
+    ledcAttachPin(6, ledChannel);
+    //pinMode(6, OUTPUT);
+    pinMode(7, OUTPUT);
+  }
+
+  void playCar() {
+    
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(ssid.c_str(), password.c_str());
+    
+    servo.attach(8);
+    
+    servo.write(90);
+    initMotor();
+    // gameServer.on("/", sendIndex);
+    gameServer.on("/data", workData);
+    gameServer.begin();
+    while(true) {
+      gameServer.handleClient();
+      delay(30);
+    }
+  }
+
+  
+
+  void play() {
+    const char *variant[] = {"Режим пульта", "Режим машинки"};
+
+    bool(korobkaMenu(2, variant)) ? playCar() : playController();
+  }
+
+} Katafalk;
+
+void workData() {
+    Katafalk.controlMotor(gameServer.arg("x").toInt());
+    Katafalk.servo.write(map(gameServer.arg("y").toInt(), -255, 255, 40, 140));
+    gameServer.send(200, "text/plain", "ok");
+  }
+
+struct {
   void play() {
     KorobkaOS.connectWiFi();
     configTime(3600*3, 0, "pool.ntp.org");
@@ -2408,7 +2484,7 @@ struct {
 
 
 void gameMenu() {
-  int numOfApps = 18;
+  int numOfApps = 19;
 
   int centerX = 64;
 
@@ -2447,7 +2523,7 @@ void gameMenu() {
     display.clearDisplay();
     display.drawBitmap(0, 0, putina_portret_vtoroy, 128, 64, 1);
     display.display();
-    ESP.deepSleep(0);
+    esp_deep_sleep_start();
   };
   appList[5].logo = std_logo;
 
@@ -2532,6 +2608,12 @@ void gameMenu() {
     game2048.play();
   };
   appList[17].logo = std_logo;
+
+  appList[18].title = "Катафалк без Бориса";
+  appList[18].execute = []{
+    Katafalk.play();
+  };
+  appList[18].logo = std_logo;
 /*
   appList[15].title = "Тестирование";
   appList[15].execute = []{
@@ -2861,6 +2943,7 @@ void setup() {
   ledcSetup(0, 0, 8);
   ledcAttachPin(5, 0);
   ledcWrite(0, 125);
+
   EEPROM.begin(256);
 
   Wire.begin(9, 10);

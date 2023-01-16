@@ -1,3 +1,4 @@
+/*
 void playKatafalk() {
   
   display.clearDisplay();
@@ -46,3 +47,4 @@ void sendData(int x, int y){
     http.begin(serverPath.c_str());
     http.GET();
 }
+*/
