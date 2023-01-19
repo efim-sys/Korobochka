@@ -2424,6 +2424,7 @@ struct {
   KServo servo = KServo(4);
 
   void playController() {
+    KorobkaOS.displaySleep();
     KorobkaOS.connectWiFi(ssid, password);
     long int sendTimer = millis();
     int joyX = 0;
@@ -2456,7 +2457,7 @@ struct {
   }
 
   void playCar() {
-    
+    KorobkaOS.displaySleep();
     WiFi.mode(WIFI_AP);
     WiFi.softAP(ssid.c_str(), password.c_str());
     
