@@ -1280,6 +1280,21 @@ struct {
       delay(100);
     }
   }
+
+  void displaySleep() {
+    Wire.beginTransmission(60);
+    Wire.write((byte) 0x00);
+    Wire.write((byte) 0xAE);
+    Wire.endTransmission();
+  }
+
+  void displayWakeUp() {
+    Wire.begin();
+    Wire.beginTransmission(60);
+    Wire.write((byte) 0x00);
+    Wire.write((byte) 0xAF);
+    Wire.endTransmission();
+  }
 } KorobkaOS;
 
 
@@ -1702,24 +1717,13 @@ struct {
     while(1) {
 
       if(millis() - tmr >= 10000) {
-        Wire.begin();
-        Wire.beginTransmission(60);
-        byte cmode = 0x00;
-        byte command = 0xAE;
-        Wire.write(cmode);
-        Wire.write(command);
-        Wire.endTransmission();
+        KorobkaOS.displaySleep();
         delay(50);
         esp_light_sleep_start();
 
         delay(300);
 
-        command = 0xAF;
-        Wire.begin();
-        Wire.beginTransmission(60);
-        Wire.write(cmode);
-        Wire.write(command);
-        Wire.endTransmission();
+        KorobkaOS.displayWakeUp();
         tmr = millis();
         drawResult(rand);
       }
@@ -1754,13 +1758,7 @@ struct {
 
     while(!bleKeyboard.isConnected()) message("not connected", 100);  // Ждем подключения к клавиатуре
 
-    Wire.begin();                                                     // Вводим дисплей в режим сна командой 0xAE
-    Wire.beginTransmission(60);
-    byte cmode = 0x00;
-    byte command = 0xAE;
-    Wire.write(cmode);
-    Wire.write(command);
-    Wire.endTransmission();
+    KorobkaOS.displaySleep();
 
     while(true){                                                      // Будем постоянно проверять нажатие кнопок
       if(bleKeyboard.isConnected()) {
@@ -2045,7 +2043,7 @@ struct {
     bool total = false;
 
     bool change = true;
-
+    // ***
     while(change) {
       change = false;
       for(int x = 0; x < a; x++){
@@ -2388,6 +2386,33 @@ void testPlay() {
   }
 }
 
+  const char index_page[] PROGMEM = R"=====(
+      <!DOCTYPE html>
+      <head>
+        <meta charset="utf-8">
+        <title>Катафалк с Борисом 2.0</title>
+        <script type="text/javascript">
+          let StickStatus={xPosition:0,yPosition:0,x:0,y:0,cardinalDirection:"C"};var JoyStick=(function(container,parameters,callback){parameters=parameters||{};var title=(typeof parameters.title==="undefined"?"joystick":parameters.title),width=(typeof parameters.width==="undefined"?0:parameters.width),height=(typeof parameters.height==="undefined"?0:parameters.height),internalFillColor=(typeof parameters.internalFillColor==="undefined"?"#00AA00":parameters.internalFillColor),internalLineWidth=(typeof parameters.internalLineWidth==="undefined"?2:parameters.internalLineWidth),internalStrokeColor=(typeof parameters.internalStrokeColor==="undefined"?"#003300":parameters.internalStrokeColor),externalLineWidth=(typeof parameters.externalLineWidth==="undefined"?2:parameters.externalLineWidth),externalStrokeColor=(typeof parameters.externalStrokeColor==="undefined"?"#008000":parameters.externalStrokeColor),autoReturnToCenter=(typeof parameters.autoReturnToCenter==="undefined"?true:parameters.autoReturnToCenter);callback=callback||function(StickStatus){};var objContainer=document.getElementById(container);objContainer.style.touchAction="none";var canvas=document.createElement("canvas");canvas.id=title;if(width===0){width=objContainer.clientWidth}if(height===0){height=objContainer.clientHeight}canvas.width=width;canvas.height=height;objContainer.appendChild(canvas);var context=canvas.getContext("2d");var pressed=0;var circumference=2*Math.PI;var internalRadius=(canvas.width-((canvas.width/2)+10))/2;var maxMoveStick=internalRadius+5;var externalRadius=internalRadius+30;var centerX=canvas.width/2;var centerY=canvas.height/2;var directionHorizontalLimitPos=canvas.width/10;var directionHorizontalLimitNeg=directionHorizontalLimitPos*-1;var directionVerticalLimitPos=canvas.height/10;var directionVerticalLimitNeg=directionVerticalLimitPos*-1;var movedX=centerX;var movedY=centerY;if("ontouchstart"in document.documentElement){canvas.addEventListener("touchstart",onTouchStart,false);document.addEventListener("touchmove",onTouchMove,false);document.addEventListener("touchend",onTouchEnd,false)}else{canvas.addEventListener("mousedown",onMouseDown,false);document.addEventListener("mousemove",onMouseMove,false);document.addEventListener("mouseup",onMouseUp,false)}drawExternal();drawInternal();function drawExternal(){context.beginPath();context.arc(centerX,centerY,externalRadius,0,circumference,false);context.lineWidth=externalLineWidth;context.strokeStyle=externalStrokeColor;context.stroke()}function drawInternal(){context.beginPath();if(movedX<internalRadius){movedX=maxMoveStick}if((movedX+internalRadius)>canvas.width){movedX=canvas.width-(maxMoveStick)}if(movedY<internalRadius){movedY=maxMoveStick}if((movedY+internalRadius)>canvas.height){movedY=canvas.height-(maxMoveStick)}context.arc(movedX,movedY,internalRadius,0,circumference,false);var grd=context.createRadialGradient(centerX,centerY,5,centerX,centerY,200);grd.addColorStop(0,internalFillColor);grd.addColorStop(1,internalStrokeColor);context.fillStyle=grd;context.fill();context.lineWidth=internalLineWidth;context.strokeStyle=internalStrokeColor;context.stroke()}function onTouchStart(event){pressed=1}function onTouchMove(event){if(pressed===1&&event.targetTouches[0].target===canvas){movedX=event.targetTouches[0].pageX;movedY=event.targetTouches[0].pageY;if(canvas.offsetParent.tagName.toUpperCase()==="BODY"){movedX-=canvas.offsetLeft;movedY-=canvas.offsetTop}else{movedX-=canvas.offsetParent.offsetLeft;movedY-=canvas.offsetParent.offsetTop}context.clearRect(0,0,canvas.width,canvas.height);drawExternal();drawInternal();StickStatus.xPosition=movedX;StickStatus.yPosition=movedY;StickStatus.x=(100*((movedX-centerX)/maxMoveStick)).toFixed();StickStatus.y=((100*((movedY-centerY)/maxMoveStick))*-1).toFixed();StickStatus.cardinalDirection=getCardinalDirection();callback(StickStatus)}}function onTouchEnd(event){pressed=0;if(autoReturnToCenter){movedX=centerX;movedY=centerY}context.clearRect(0,0,canvas.width,canvas.height);drawExternal();drawInternal();StickStatus.xPosition=movedX;StickStatus.yPosition=movedY;StickStatus.x=(100*((movedX-centerX)/maxMoveStick)).toFixed();StickStatus.y=((100*((movedY-centerY)/maxMoveStick))*-1).toFixed();StickStatus.cardinalDirection=getCardinalDirection();callback(StickStatus)}function onMouseDown(event){pressed=1}function onMouseMove(event){if(pressed===1){movedX=event.pageX;movedY=event.pageY;if(canvas.offsetParent.tagName.toUpperCase()==="BODY"){movedX-=canvas.offsetLeft;movedY-=canvas.offsetTop}else{movedX-=canvas.offsetParent.offsetLeft;movedY-=canvas.offsetParent.offsetTop}context.clearRect(0,0,canvas.width,canvas.height);drawExternal();drawInternal();StickStatus.xPosition=movedX;StickStatus.yPosition=movedY;StickStatus.x=(100*((movedX-centerX)/maxMoveStick)).toFixed();StickStatus.y=((100*((movedY-centerY)/maxMoveStick))*-1).toFixed();StickStatus.cardinalDirection=getCardinalDirection();callback(StickStatus)}}function onMouseUp(event){pressed=0;if(autoReturnToCenter){movedX=centerX;movedY=centerY}context.clearRect(0,0,canvas.width,canvas.height);drawExternal();drawInternal();StickStatus.xPosition=movedX;StickStatus.yPosition=movedY;StickStatus.x=(100*((movedX-centerX)/maxMoveStick)).toFixed();StickStatus.y=((100*((movedY-centerY)/maxMoveStick))*-1).toFixed();StickStatus.cardinalDirection=getCardinalDirection();callback(StickStatus)}function getCardinalDirection(){let result="";let orizontal=movedX-centerX;let vertical=movedY-centerY;if(vertical>=directionVerticalLimitNeg&&vertical<=directionVerticalLimitPos){result="C"}if(vertical<directionVerticalLimitNeg){result="N"}if(vertical>directionVerticalLimitPos){result="S"}if(orizontal<directionHorizontalLimitNeg){if(result==="C"){result="W"}else{result+="W"}}if(orizontal>directionHorizontalLimitPos){if(result==="C"){result="E"}else{result+="E"}}return result}this.GetWidth=function(){return canvas.width};this.GetHeight=function(){return canvas.height};this.GetPosX=function(){return movedX};this.GetPosY=function(){return movedY};this.GetX=function(){return(100*((movedX-centerX)/maxMoveStick)).toFixed()};this.GetY=function(){return((100*((movedY-centerY)/maxMoveStick))*-1).toFixed()};this.GetDir=function(){return getCardinalDirection()}});
+        </script>
+      </head>
+      <body>
+        <center>
+        <div id="joyDiv" style="width:400px;height:400px;"></div>
+        </center>
+        <script type="text/javascript">
+          var Joy1 = new JoyStick('joyDiv', {});
+          setInterval(() => {
+            var xmlHttp = new XMLHttpRequest();
+            let y = Math.floor(((Joy1.GetPosX()-100)/100-1)*255);
+            let x = -1*Math.floor(((Joy1.GetPosY()-100)/100-1)*255);
+            xmlHttp.open( "GET", "/data?x="+x.toString()+"&y="+y.toString(), false );
+            xmlHttp.send( null );}
+            , 50);
+          
+        </script>
+      </body>
+    )=====";
+
 struct {
   String ssid = "Korobka-Katafalk";
   String password = "ftotheded";
@@ -2424,8 +2449,10 @@ struct {
   void initMotor() {
     ledcSetup(ledChannel, 3000, 8);
     ledcAttachPin(6, ledChannel);
+    ledcWrite(ledChannel, 0);
     //pinMode(6, OUTPUT);
     pinMode(7, OUTPUT);
+    digitalWrite(7, 0);
   }
 
   void playCar() {
@@ -2439,6 +2466,7 @@ struct {
     initMotor();
     // gameServer.on("/", sendIndex);
     gameServer.on("/data", workData);
+    gameServer.on("/", sendIndex);
     gameServer.begin();
     while(true) {
       gameServer.handleClient();
@@ -2457,10 +2485,14 @@ struct {
 } Katafalk;
 
 void workData() {
-    Katafalk.controlMotor(gameServer.arg("x").toInt());
-    Katafalk.servo.write(map(gameServer.arg("y").toInt(), -255, 255, 40, 140));
-    gameServer.send(200, "text/plain", "ok");
-  }
+  Katafalk.controlMotor(gameServer.arg("x").toInt());
+  Katafalk.servo.write(map(gameServer.arg("y").toInt(), -255, 255, 40, 140));
+  gameServer.send(200, "text/plain", "ok");
+}
+
+void sendIndex() {
+  gameServer.send(200, "text/html", String(index_page));
+}
 
 struct {
   void play() {
