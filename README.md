@@ -1,7 +1,7 @@
 # Korobochka
 Nano size gaming console
 
-![Real photo of game console](https://github.com/efim-sys/Korobochka/raw/main/tanchiki_textures/korobka%20photos/2.png "Photo of gameing console")
+![Real photo of game console](https://github.com/efim-sys/Korobochka/raw/main/tanchiki_textures/korobka%20photos/1.webp "Photo of gameing console")
 
 # Korobochka features pre-installed apps:
   1. Space-Heroes
