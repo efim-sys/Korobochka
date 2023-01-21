@@ -1266,8 +1266,8 @@ struct {
     display.setCursor(28, 0);
     display.setTextSize(1);
     display.print("Connecting to");
-    display.setCursor(64 - SSID.length() * 3, 8);
-    display.print(SSID);
+    display.setCursor(64 - utf8rus(SSID).length() * 3, 8);
+    display.print(utf8rus(SSID));
     int pos = 32;
     int e = 8;
     while(WiFi.status() != WL_CONNECTED) {
@@ -3277,8 +3277,8 @@ void playSettings() {
             ESP.restart();}
             break;
       case 4: {
-        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "I2C scanner", "Осцилограф", "Генератор PWM", "Свой репозиторий", "ds18b20 t-meter"};
-        switch (korobkaMenu(7, tools)) {
+        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "I2C scanner", "Осцилограф", "Генератор PWM", "Свой репозиторий", "ds18b20 t-meter", "Тест дисплея"};
+        switch (korobkaMenu(8, tools)) {
           case 0:
             {thermo_type = 0;
             playThermometer();}
@@ -3305,7 +3305,7 @@ void playSettings() {
             display.setTextSize(1);
             for (byte i = 8; i < 120; i++) {
               Wire.beginTransmission(i);
-              if(Wire.endTransmission() == 0) display.println(String(i, HEX));
+              if(Wire.endTransmission() == 0) display.println("0x"+String(i, HEX));
             }
             display.display();
             while(1);}
@@ -3347,6 +3347,38 @@ void playSettings() {
             case 6:
               ds18b20.play();
               break;
+            case 7:
+              uint64_t time = micros();
+              
+              for (byte i = 0; i < 8; i++) {
+                display.clearDisplay();
+                display.drawBitmap(0, 0, cow[i], 128, 64, 1);
+                display.display();
+              }
+              time = micros() - time;
+              display.setCursor(0, 0);
+              display.clearDisplay();
+              display.println(utf8rus("Время кадра:"));
+              display.println(time / 8000.0f);
+              display.print("FPS: ");
+              display.print(8000000.0f / time);
+              display.display();
+              while(digitalRead(KEYRS)) delay(20);
+              delay(200);
+              break;
+            // case 7:
+            //   // temperature_sensor_handle_t temp_handle = NULL;
+            //   // temperature_sensor_config_t temp_sensor;
+            //   // temp_sensor.range_min = -20,
+            //   // temp_sensor.range_max = 60,
+            //   // temperature_sensor_install(&temp_sensor, &temp_handle);
+            //   // temperature_sensor_enable(temp_handle);
+            //   // float tsens_out;
+            //   while(true) {
+            //     //temperature_sensor_get_celsius(temp_handle, &tsens_out);
+            //     message(String((temprature_sens_read() - 32) / 1.8).c_str(), 100);
+            //   }
+            //   break;
           }
         }
           break;
