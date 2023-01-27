@@ -14,6 +14,7 @@
 #include <Adafruit_MLX90614.h>
 #include "SPIFFS.h"
 #include <FS.h>
+#include <SPI.h>
 //#include "GyverButton.h"
 //#include <Fonts/FreeMonoOblique12pt7b.h>
 #include <EEPROM.h>
@@ -70,7 +71,26 @@ String password = "MW9pDbkK";
 
 #define VERSION "1.33"
 
+#define DTYPE 0
+
+#define OLED_MOSI   5
+#define OLED_CLK   8
+#define OLED_DC    6
+#define OLED_CS    9
+#define OLED_RESET 7
+
+#if (DTYPE == 1)
+
+
+//vspi = new SPIClass(VSPI);
+//Adafruit_SSD1306 display(128, 64, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
+Adafruit_SSD1306 display(128, 64,
+  &SPI, OLED_DC, OLED_RESET, OLED_CS, 14000000);
+#else
+
 Adafruit_SSD1306 display(128, 64, &Wire, OLED_RESET);
+
+#endif
 //Adafruit_MLX90614 mlx = Adafruit_MLX90614();
 /*
 GButton keyrs(KEYRS);
@@ -2504,12 +2524,29 @@ struct {
       message("Can't get time", 1000);
     }
     WiFi.disconnect();
+    byte upds = 0;
+
+    gpio_wakeup_enable(GPIO_NUM_4, GPIO_INTR_LOW_LEVEL);
+    gpio_wakeup_enable(GPIO_NUM_3, GPIO_INTR_LOW_LEVEL);
+    gpio_wakeup_enable(GPIO_NUM_2, GPIO_INTR_LOW_LEVEL);
+    gpio_wakeup_enable(GPIO_NUM_1, GPIO_INTR_LOW_LEVEL);
+    esp_sleep_enable_gpio_wakeup();
+    esp_sleep_enable_timer_wakeup(1000000);
+
     while(true) {
+      if(upds>=10) {
+        KorobkaOS.displaySleep();
+        delay(50);
+        esp_light_sleep_start();
+        upds = 0;
+      }
       if(!getLocalTime(&timeinfo)){
         message("Can't get time", 1000);
       }
       else {
-        message(String(asctime(&timeinfo)).c_str(), 1000);
+        message(String(asctime(&timeinfo)).c_str(), 0);
+        esp_deep_sleep_start();
+        upds++;
       }
     }
   }
@@ -2979,7 +3016,7 @@ void setup() {
 
   EEPROM.begin(256);
 
-  Wire.begin(9, 10);
+  if(DTYPE != 1) Wire.begin(9, 10);
   if(!SPIFFS.begin(true)) message("SPIFFS init fail", 1000);
   File wpa_ssid = SPIFFS.open(F("/wpa_ssid"), "r");
   File wpa_pass = SPIFFS.open(F("/wpa_pass"), "r");
@@ -2998,7 +3035,11 @@ void setup() {
   pinMode(KEYRS, INPUT_PULLUP);
   ledcSetup(TONEPIN, 300, 255);
   randomSeed(analogRead(36));
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  if(DTYPE != 1) display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  else {
+    SPI.begin(OLED_CLK, -1, OLED_MOSI, OLED_CS);
+    display.begin(SSD1306_SWITCHCAPVCC);
+  }
   display.dim(0);
   display.cp437(true);
   display.setRotation(0);
@@ -3358,6 +3399,7 @@ void playSettings() {
               time = micros() - time;
               display.setCursor(0, 0);
               display.clearDisplay();
+              display.println("\n\n\n");
               display.println(utf8rus("Время кадра:"));
               display.println(time / 8000.0f);
               display.print("FPS: ");
