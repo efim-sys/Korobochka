@@ -2531,21 +2531,23 @@ struct {
     gpio_wakeup_enable(GPIO_NUM_2, GPIO_INTR_LOW_LEVEL);
     gpio_wakeup_enable(GPIO_NUM_1, GPIO_INTR_LOW_LEVEL);
     esp_sleep_enable_gpio_wakeup();
-    esp_sleep_enable_timer_wakeup(1000000);
+    //esp_sleep_enable_timer_wakeup(900000);
 
     while(true) {
       if(upds>=10) {
         KorobkaOS.displaySleep();
         delay(50);
         esp_light_sleep_start();
+        KorobkaOS.displayWakeUp();
         upds = 0;
       }
       if(!getLocalTime(&timeinfo)){
         message("Can't get time", 1000);
       }
       else {
-        message(String(asctime(&timeinfo)).c_str(), 0);
-        esp_deep_sleep_start();
+        message(String(asctime(&timeinfo)).c_str(), 1000);
+        //esp_deep_sleep_start();
+        //delay(70);
         upds++;
       }
     }
