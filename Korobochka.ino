@@ -2614,14 +2614,19 @@ struct {
       else {
         //message(String(asctime(&timeinfo)).c_str(), 1000);
         display.clearDisplay();
-        display.setCursor(0, 0);
+        
         display.setTextSize(2);
-        display.print(String(asctime(&timeinfo)).substring(11, 20));
+        String dayStr = asctime(&timeinfo);
+        String timeStr = String(asctime(&timeinfo)).substring(11, 20);
+        dayStr = dayStr.substring(0, 11) + dayStr.substring(21);
+        display.setCursor(64-timeStr.length()/6, 0);
+        display.print(timeStr);
         display.setTextSize(1);
-        display.setCursor(0, 16);
-        display.print(String(asctime(&timeinfo)).substring(0, 11) + String(asctime(&timeinfo)).substring(20));
+        display.setCursor(64-timeStr.length()/3, 16);
+        display.print(dayStr);
         display.display();
         delay(1000);
+        
         //esp_deep_sleep_start();
         //delay(70);
         upds++;
