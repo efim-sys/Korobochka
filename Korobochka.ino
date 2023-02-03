@@ -1315,6 +1315,14 @@ struct {
     Wire.write((byte) 0xAF);
     Wire.endTransmission();
   }
+
+  void enableButtonWakeUp() {
+    gpio_wakeup_enable(GPIO_NUM_4, GPIO_INTR_LOW_LEVEL);
+    gpio_wakeup_enable(GPIO_NUM_3, GPIO_INTR_LOW_LEVEL);
+    gpio_wakeup_enable(GPIO_NUM_2, GPIO_INTR_LOW_LEVEL);
+    gpio_wakeup_enable(GPIO_NUM_1, GPIO_INTR_LOW_LEVEL);
+    esp_sleep_enable_gpio_wakeup();
+  }
 } KorobkaOS;
 
 
@@ -1728,10 +1736,7 @@ struct {
   void play() {
     int tmr = millis();
     int rand = 0;
-    gpio_wakeup_enable(GPIO_NUM_4, GPIO_INTR_LOW_LEVEL);
-    gpio_wakeup_enable(GPIO_NUM_3, GPIO_INTR_LOW_LEVEL);
-    gpio_wakeup_enable(GPIO_NUM_2, GPIO_INTR_LOW_LEVEL);
-    gpio_wakeup_enable(GPIO_NUM_1, GPIO_INTR_LOW_LEVEL);
+    KorobkaOS.enableButtonWakeUp();
     esp_sleep_enable_gpio_wakeup();
     drawResult(rand);
     while(1) {
@@ -2593,11 +2598,7 @@ struct {
     WiFi.disconnect();
     byte upds = 0;
 
-    gpio_wakeup_enable(GPIO_NUM_4, GPIO_INTR_LOW_LEVEL);
-    gpio_wakeup_enable(GPIO_NUM_3, GPIO_INTR_LOW_LEVEL);
-    gpio_wakeup_enable(GPIO_NUM_2, GPIO_INTR_LOW_LEVEL);
-    gpio_wakeup_enable(GPIO_NUM_1, GPIO_INTR_LOW_LEVEL);
-    esp_sleep_enable_gpio_wakeup();
+    KorobkaOS.enableButtonWakeUp();
     //esp_sleep_enable_timer_wakeup(900000);
 
     while(true) {
@@ -2617,14 +2618,16 @@ struct {
         
         display.setTextSize(2);
         String dayStr = asctime(&timeinfo);
-        String timeStr = String(asctime(&timeinfo)).substring(11, 20);
-        dayStr = dayStr.substring(0, 11) + dayStr.substring(21);
-        display.setCursor(64-timeStr.length()/6, 0);
+        String timeStr = String(timeinfo.tm_hour)+":"+String(timeinfo.tm_min)+":"+String(timeinfo.tm_sec);
+        //String(asctime(&timeinfo)).substring(11, 20);
+        dayStr = dayStr.substring(0, 11) + dayStr.substring(22);
+        display.setCursor(64-timeStr.length()*6, 0);
         display.print(timeStr);
         display.setTextSize(1);
-        display.setCursor(64-timeStr.length()/3, 16);
+        display.setCursor(64-dayStr.length()*3, 16);
         display.print(dayStr);
         display.display();
+
         delay(1000);
         
         //esp_deep_sleep_start();
