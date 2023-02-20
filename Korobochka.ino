@@ -2507,7 +2507,7 @@ const unsigned char car_eyes [] PROGMEM = {
 };
 
 struct {
-  String ssid = "Korobka-Katafalk";
+  String ssid = "Korobka-Car";
   String password = "ftotheded";
 
   int ledChannel = 0;
@@ -2765,7 +2765,7 @@ void gameMenu() {
   };
   appList[17].logo = std_logo;
 
-  appList[18].title = "Катафалк";
+  appList[18].title = "Машинка";
   appList[18].execute = []{
     Katafalk.play();
   };
