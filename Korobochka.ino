@@ -1845,17 +1845,21 @@ struct {
         int samples = props[n].samples;                          // Кол-во фрагментов по 10 кадров
         const char* vidUrl = props[n].url.c_str();
         for(int f = 0; f < samples; f++){
-
+          uint32_t timer = millis();
           String path = serverURL + String(vidUrl) + "/" + String(f) + ".ktube";  // Адрес нужного фрагмента
           http.begin(path.c_str());
           http.GET();
           payload = http.getString();
+          timer = millis() - timer;
           for(int j = 0; j < 10; j++) {
             for(int i = 0; i < 1024; i++) {
               frame[i] = payload[i+j*1024];                      // Пишем 1 кадр в память
             }
             display.clearDisplay();
             display.drawBitmap(0, 0, frame, 128, 64, 1);         // Выводим кадр на дисплей
+            display.setCursor(0, 0);
+            display.print("ping: ");
+            display.print(timer);
             display.display();
             if(!digitalRead(KEYRS)) {                            // Функция паузы
               display.setCursor(0, 0);
@@ -2514,7 +2518,12 @@ struct {
 
   KServo servo = KServo(4);
 
+  bool useJoy = false;
+
   void playController() {
+    const char *variant[] = {"Кнопки", "Джойстик (0, 5)"};
+
+    useJoy = bool(korobkaMenu(2, variant));
     KorobkaOS.displaySleep();
     
     KorobkaOS.connectWiFi(ssid, password);
@@ -2523,8 +2532,15 @@ struct {
     int joyY = 0;
     HTTPClient http;
     while(1){
-      joyX = (-255 * !digitalRead(KEYLS)) + (255 * !digitalRead(KEYRS));
-      joyY = (-255 * !digitalRead(KEYLC)) + (255 * !digitalRead(KEYRC));
+      if(!useJoy) {
+        joyX = (-255 * !digitalRead(KEYLS)) + (255 * !digitalRead(KEYRS));
+        joyY = (-255 * !digitalRead(KEYLC)) + (255 * !digitalRead(KEYRC));
+      }
+      else {
+        joyX = analogRead(0) / 8 - 255;
+        joyY = analogRead(5) / 8 - 255;
+      }
+      
       if(sendTimer < (millis() - 50)){        
         String serverPath = String("http://192.168.4.1/data") + String("?x=") + String(joyX) + String("&y=") + String(joyY);
         http.begin(serverPath.c_str());
@@ -2535,8 +2551,8 @@ struct {
   }
 
   void controlMotor(int power) {
-    digitalWrite(7, power < 0);
-    ledcWrite(ledChannel, (power < 0) ? (255 + power) : power);
+    digitalWrite(7, power >= 0);
+    ledcWrite(ledChannel, abs(power));
   }
 
   void initMotor() {
@@ -2547,7 +2563,7 @@ struct {
     digitalWrite(7, 0);
   }
 
-  void playCar() {
+  void playCar() {  // Режим машинки
     display.clearDisplay();
     display.drawBitmap(0, 0, car_eyes, 128, 64, 1);
     display.display();
@@ -2567,9 +2583,7 @@ struct {
     }
   }
 
-  
-
-  void play() {
+  void play() {  // Выбор режима
     const char *variant[] = {"Режим пульта", "Режим машинки"};
 
     bool(korobkaMenu(2, variant)) ? playCar() : playController();
@@ -2579,8 +2593,8 @@ struct {
 
 void workData() {
   Katafalk.controlMotor(gameServer.arg("x").toInt());
-  Katafalk.servo.write(map(gameServer.arg("y").toInt(), -255, 255, 40, 140));
-  gameServer.send(200, "text/plain", "ok");
+  Katafalk.servo.write(map(gameServer.arg("y").toInt(), -255, 255, 60, 120));
+  gameServer.send(200, "text/plain", String());
 }
 
 void sendIndex() {
@@ -3100,6 +3114,8 @@ void setup() {
   ledcAttachPin(5, 0);
   ledcWrite(0, 125);
 
+  Katafalk.initMotor();
+
   EEPROM.begin(256);
 
   if(DTYPE != 1) Wire.begin(9, 10);
@@ -3371,7 +3387,14 @@ void playSettings() {
         display.println("Build datetime: ");
         display.println(String(__DATE__) + " " + String(__TIME__));        
         display.print((100.0 * SPIFFS.usedBytes()) / SPIFFS.totalBytes());
-        display.println(" \% of FS used");
+        display.print(utf8rus(" \% of FS used\nЧастота ЦП: "));
+        display.print(ESP.getCpuFreqMHz());
+        display.print(utf8rus("МГц\nОЗУ (Кб):"));
+        display.print(0.000976562*(ESP.getHeapSize()-ESP.getFreeHeap()));
+        display.print("/");
+        display.println(0.000976562*ESP.getHeapSize());
+        display.print(utf8rus("Диск (Кб): "));
+        display.print(0.000976562*ESP.getFlashChipSize());
         display.display();
         delay(200);
         while(digitalRead(KEYRS)) delay(50);
@@ -3404,8 +3427,8 @@ void playSettings() {
             ESP.restart();}
             break;
       case 4: {
-        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "I2C scanner", "Осцилограф", "Генератор PWM", "Свой репозиторий", "ds18b20 t-meter", "Тест дисплея"};
-        switch (korobkaMenu(8, tools)) {
+        const char* tools[] = {"MLX90614 t-metr", "ROM-tool", "I2C scanner", "Осцилограф", "Генератор PWM", "Свой репозиторий", "ds18b20 t-meter", "Тест дисплея", "Sigma-Delta синусоид"};
+        switch (korobkaMenu(9, tools)) {
           case 0:
             {thermo_type = 0;
             playThermometer();}
@@ -3474,7 +3497,7 @@ void playSettings() {
             case 6:
               ds18b20.play();
               break;
-            case 7:
+            case 7: {
               uint64_t time = micros();
               
               for (byte i = 0; i < 8; i++) {
@@ -3493,6 +3516,51 @@ void playSettings() {
               display.display();
               while(digitalRead(KEYRS)) delay(20);
               delay(200);
+            }
+              break;
+
+            case 8: {
+              
+              uint8_t sinus[64];
+              int freq = 500;
+              int period = 1000000/(64*freq);
+
+              for(byte i = 0; i < sizeof(sinus); i++) {
+                sinus[i]=(sin((i/64.0)*TWO_PI)+1.0)*127;  
+              }
+
+              sigmaDeltaSetup(5, 0, freq);
+
+              uint32_t tmr = millis();
+              uint32_t tmr1 = millis();
+
+              while(true) {
+                for(byte i = 0; i < sizeof(sinus); i++) {
+                  if(tmr > millis()+period) {
+                    sigmaDeltaWrite(0, sinus[i]);
+                    tmr = millis();
+                  }
+                  else if (tmr1 > millis()+200) {
+                    if(!digitalRead(KEYLS)) {
+                      tmr1 = millis();
+                      freq -= 20;
+                      period = 1000000/(64*freq);
+                    }
+                    else if(!digitalRead(KEYRC)) {
+                      tmr1 = millis();
+                      freq += 20;
+                      period = 1000000/(64*freq);
+                    }
+                  }
+                                   
+                  
+                }
+                // s = korobkaKeyboard.play(s);
+                // String e = s;
+                // freq = e.toInt();
+                // e = e.substring(e.indexOf(" "));
+                // duty = e.toInt();
+              }}
               break;
             // case 7:
             //   // temperature_sensor_handle_t temp_handle = NULL;
