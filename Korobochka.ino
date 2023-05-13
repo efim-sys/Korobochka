@@ -2524,9 +2524,11 @@ struct {
     const char *variant[] = {"Кнопки", "Джойстик (0, 5)"};
 
     useJoy = bool(korobkaMenu(2, variant));
-    KorobkaOS.displaySleep();
+    
     
     KorobkaOS.connectWiFi(ssid, password);
+
+    KorobkaOS.displaySleep();
     long int sendTimer = millis();
     int joyX = 0;
     int joyY = 0;
@@ -2551,6 +2553,7 @@ struct {
   }
 
   void controlMotor(int power) {
+    power = constrain(power, -255, 255);
     digitalWrite(7, power >= 0);
     ledcWrite(ledChannel, abs(power));
   }
@@ -2582,11 +2585,43 @@ struct {
       delay(30);
     }
   }
+  void playSonic() {
+    initMotor();
+    servo.attach(8);
+    KorobkaOS.displaySleep();
+    servo.write(90);
+    ledcDetachPin(5);
+    pinMode(5, OUTPUT);
+    pinMode(0, INPUT);
+    while(true) {
+      digitalWrite(5, LOW);
+      delayMicroseconds(5);
+      digitalWrite(5, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(5, LOW);
+      int cm = (pulseIn(0, HIGH) / 2) / 29.1;
+      int err = 50*(cm - 20);
+      Serial.print(cm);
+      Serial.print(",");
+      Serial.println(err);
+      controlMotor(err);
+      delay(100);
+    }
+  }
 
   void play() {  // Выбор режима
-    const char *variant[] = {"Режим пульта", "Режим машинки"};
-
-    bool(korobkaMenu(2, variant)) ? playCar() : playController();
+    const char *variant[] = {"Режим пульта", "Режим машинки", "20 см до стены"};
+    switch(korobkaMenu(3, variant)) {
+      case 1:
+      playCar();
+      break;
+      case 0: 
+      playController();
+      break;
+      case 2:
+      playSonic();
+      break;
+    }
   }
 
 } Katafalk;
