@@ -314,7 +314,7 @@ void loose() {
   display.print(utf8rus("Проиграли"));
   display.setTextSize(1);
   display.setCursor(10, 50);
-  display.print(utf8rus("считать буржуи: "));
+  display.print(utf8rus("считать враги: "));
   display.print(score);
   display.drawRect(0, 0, 128, 64, 1);
   display.display();
@@ -338,7 +338,7 @@ void win() {
   display.print(utf8rus("Выйграли!"));
   display.setTextSize(1);
   display.setCursor(10, 50);
-  display.print(utf8rus("считать буржуи: "));
+  display.print(utf8rus("считать враги: "));
   display.print(score);
   display.drawRect(0, 0, 128, 64, 1);
   display.display();
